@@ -1,25 +1,27 @@
 # Inflate AI CRM
 
-Contacts, company profiles, a 5-stage lead pipeline, and an analytics dashboard, built with Next.js and Prisma/Postgres.
+Contacts, company profiles, a 5-stage lead pipeline, and an analytics dashboard.
 
-## Deploying (no terminal required)
+## Running it (Windows, one-time setup)
 
-1. Go to [vercel.com](https://vercel.com) and sign in.
-2. Click **Add New… → Project**, then import the `BryanMyers87/personal-website` GitHub repo.
-3. On the setup screen, expand **Root Directory** and set it to `crm`. Click **Deploy**. (This first deploy will fail — that's expected, there's no database yet. Continue to the next step.)
-4. Open the new project, go to the **Storage** tab, click **Create Database**, choose **Postgres** (free tier), and connect it to the project.
-5. Go to the **Deployments** tab, click the **⋯** menu on the most recent deployment, and choose **Redeploy**.
-6. When it finishes, click the URL Vercel shows you — that's your live CRM.
+1. Go to this repository on GitHub, click the green **Code** button, then **Download ZIP**.
+2. Find the downloaded ZIP file (usually in your Downloads folder), right-click it, and choose **Extract All**.
+3. Open the extracted folder, then open the `crm` folder inside it.
+4. Double-click **`start-crm.bat`**.
+   - The first time, it will install some things automatically — this can take a few minutes. Just let it run.
+   - If Windows shows a blue "Windows protected your PC" warning, click **More info**, then **Run anyway**. This happens for any downloaded script and is expected.
+5. A browser window will open automatically to your CRM.
 
-Database tables are created automatically as part of every deploy, so there's nothing else to run. No leads are seeded; the pipeline starts empty.
+## Using it after that
 
-## Local development (optional, for developers)
+Every time you want to open the CRM, just double-click **`start-crm.bat`** again in that same `crm` folder. It'll open a window titled "Inflate AI CRM" — leave that window open while you're using the CRM, and close it when you're done (or just leave it running).
 
-Requires a local Postgres database.
+Your data is saved in a file inside the `crm/prisma` folder and stays there between sessions. No leads are seeded; the pipeline starts empty.
+
+## Local development (for developers)
 
 ```bash
 npm install
-cp .env.example .env   # then fill in DATABASE_URL
 npm run dev
 ```
 
