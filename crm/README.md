@@ -2,25 +2,25 @@
 
 Contacts, company profiles, a 5-stage lead pipeline, and an analytics dashboard, built with Next.js and Prisma/Postgres.
 
-## Local development
+## Deploying (no terminal required)
 
-Requires a Postgres database. If you don't have one, the fastest options are a free [Neon](https://neon.tech) or [Supabase](https://supabase.com) database, or `docker run -p 5432:5432 -e POSTGRES_PASSWORD=localdev postgres:16`.
+1. Go to [vercel.com](https://vercel.com) and sign in.
+2. Click **Add New… → Project**, then import the `BryanMyers87/personal-website` GitHub repo.
+3. On the setup screen, expand **Root Directory** and set it to `crm`. Click **Deploy**. (This first deploy will fail — that's expected, there's no database yet. Continue to the next step.)
+4. Open the new project, go to the **Storage** tab, click **Create Database**, choose **Postgres** (free tier), and connect it to the project.
+5. Go to the **Deployments** tab, click the **⋯** menu on the most recent deployment, and choose **Redeploy**.
+6. When it finishes, click the URL Vercel shows you — that's your live CRM.
+
+Database tables are created automatically as part of every deploy, so there's nothing else to run. No leads are seeded; the pipeline starts empty.
+
+## Local development (optional, for developers)
+
+Requires a local Postgres database.
 
 ```bash
 npm install
 cp .env.example .env   # then fill in DATABASE_URL
-npx prisma migrate deploy
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
-
-## Deploying to Vercel (free)
-
-1. Push this repo to GitHub (already done if you're reading this from the repo).
-2. Sign up at [vercel.com](https://vercel.com) (GitHub login is fastest) and create a new project from this repo, setting the project's **Root Directory** to `crm`.
-3. In the new project, go to **Storage → Create Database → Postgres** (free tier) and connect it to the project. This automatically sets a `DATABASE_URL` (or `POSTGRES_PRISMA_URL`/similar) environment variable — if it's not named exactly `DATABASE_URL`, add a `DATABASE_URL` env var in **Settings → Environment Variables** pointing to the same connection string.
-4. Deploy. On the first deploy (or by running `npx prisma migrate deploy` locally against the same `DATABASE_URL`), apply the migrations in `prisma/migrations/` so the database schema exists.
-5. Visit the URL Vercel gives you — that's the live CRM.
-
-No leads are seeded; the pipeline starts empty.
