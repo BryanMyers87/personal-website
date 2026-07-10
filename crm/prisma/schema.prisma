@@ -1,0 +1,106 @@
+// Inflate AI CRM data model
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// The 5 stages of the lead pipeline, in order.
+enum LeadStage {
+  NEW
+  APPOINTMENT_BOOKED
+  AUDIT_IN_PROGRESS
+  SUBMITTED_FOR_APPROVAL
+  APPROVED
+}
+
+// Outcome of a lead, independent of which stage it reached.
+enum LeadStatus {
+  OPEN
+  WON
+  LOST
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  industry  String?
+  website   String?
+  phone     String?
+  email     String?
+  address   String?
+  city      String?
+  state     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts Contact[]
+  leads    Lead[]
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  title     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  leads Lead[]
+
+  @@index([companyId])
+}
+
+model Lead {
+  id             String     @id @default(cuid())
+  title          String
+  stage          LeadStage  @default(NEW)
+  status         LeadStatus @default(OPEN)
+  source         String?
+  estimatedValue Float?
+  notes          String?
+
+  // Business-meaning dates (distinct from stage-history timestamps,
+  // so an appointment can be scheduled ahead of the stage actually changing).
+  appointmentDate DateTime?
+  lostReason      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Restrict)
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  stageHistory StageHistoryEntry[]
+
+  @@index([contactId])
+  @@index([companyId])
+  @@index([stage])
+}
+
+// Every stage transition is recorded here, giving an accurate audit trail
+// and the source of truth for cycle-time analytics (time between transitions).
+model StageHistoryEntry {
+  id        String    @id @default(cuid())
+  leadId    String
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fromStage LeadStage?
+  toStage   LeadStage
+  changedAt DateTime  @default(now())
+
+  @@index([leadId])
+}
