@@ -21,7 +21,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Deploying
 
-The `build` script runs `prisma migrate deploy` before `next build`, so deploying just means:
+The `start` script runs `prisma migrate deploy` before `next start`, so deploying just means:
 
 1. Provision a Postgres database and set `DATABASE_URL` in the app's environment variables.
-2. Deploy — migrations run automatically as part of the build.
+2. Deploy — migrations run automatically when the container starts.
+
+(Migrations run at start, not build, because most hosts — including Railway —
+don't expose private networking to the build container, only to the running
+service.)
