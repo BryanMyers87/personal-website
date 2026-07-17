@@ -3,14 +3,28 @@ import { Mail, Phone, Plus, Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Card, EmptyState, PageHeader, ButtonLink, Badge } from "@/components/ui";
 import { STAGE_COLORS, STAGE_LABELS } from "@/lib/stages";
+import { parseContactSort } from "@/lib/contactSort";
+import ContactSortSelect from "@/components/ContactSortSelect";
 
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, sort: sortParam } = await searchParams;
   const query = q?.trim() ?? "";
+  const sort = parseContactSort(sortParam);
+
+  const orderBy =
+    sort === "firstName"
+      ? { firstName: "asc" as const }
+      : sort === "lastName"
+        ? { lastName: "asc" as const }
+        : sort === "company"
+          ? { company: { name: "asc" as const } }
+          : sort === "city"
+            ? { company: { city: "asc" as const } }
+            : { createdAt: "desc" as const };
 
   const contacts = await prisma.contact.findMany({
     where: query
@@ -26,7 +40,7 @@ export default async function ContactsPage({
     include: {
       company: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy,
   });
 
   return (
@@ -41,8 +55,8 @@ export default async function ContactsPage({
         }
       />
 
-      <form className="mb-4">
-        <div className="relative max-w-sm">
+      <form className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="search"
@@ -52,6 +66,8 @@ export default async function ContactsPage({
             className="w-full rounded-lg border border-zinc-300 bg-white py-2 pl-9 pr-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </div>
+        <input type="hidden" name="sort" value={sort} />
+        <ContactSortSelect value={sort} />
       </form>
 
       {contacts.length === 0 ? (
