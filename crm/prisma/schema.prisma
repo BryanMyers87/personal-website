@@ -9,15 +9,18 @@ datasource db {
   provider = "postgresql"
 }
 
-// The 5 active stages of the pipeline, in order. Won/Lost are outcomes
-// (DealStatus), not stages — a deal is marked won or lost from whichever
-// stage it was in, it doesn't advance through separate "won"/"lost" columns.
+// The 5 active stages of the pipeline, in order, plus the post-win state.
+// Won/Lost are outcomes (DealStatus), not stages — a deal is marked won or
+// lost from whichever stage it was in. Marking a deal won automatically
+// moves it into RELATIONSHIP_MANAGEMENT, which sits outside the active
+// pipeline (it's not a column you drag a deal through).
 enum DealStage {
   PROSPECT
   LEAD_QUALIFICATION
   MEETING
   PROPOSAL
   NEGOTIATION
+  RELATIONSHIP_MANAGEMENT
 }
 
 // Outcome of a deal, independent of which stage it reached.
@@ -73,6 +76,7 @@ model Contact {
 
   stageHistory   StageHistoryEntry[]
   journalEntries JournalEntry[]
+  reminders      Reminder[]
 
   @@index([companyId])
   @@index([stage])
@@ -89,6 +93,22 @@ model StageHistoryEntry {
   changedAt DateTime  @default(now())
 
   @@index([contactId])
+}
+
+// A follow-up reminder for a contact — used for scheduling future
+// touch points and interactions, most relevant once a deal is won and the
+// contact moves into relationship management.
+model Reminder {
+  id          String    @id @default(cuid())
+  contactId   String
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  note        String
+  dueAt       DateTime
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([contactId])
+  @@index([dueAt])
 }
 
 // Freeform touch-point log for a contact — calls, emails, meetings, etc.

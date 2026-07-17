@@ -136,10 +136,30 @@ export async function moveDealStage(contactId: string, toStage: DealStage): Prom
 }
 
 export async function markDealWon(contactId: string): Promise<void> {
-  await prisma.contact.update({
-    where: { id: contactId },
-    data: { status: DealStatus.WON, lostReason: null, closedAt: new Date() },
-  });
+  const contact = await prisma.contact.findUnique({ where: { id: contactId }, select: { stage: true } });
+  if (!contact) return;
+
+  const alreadyInRelationshipManagement = contact.stage === DealStage.RELATIONSHIP_MANAGEMENT;
+
+  await prisma.$transaction([
+    prisma.contact.update({
+      where: { id: contactId },
+      data: {
+        status: DealStatus.WON,
+        lostReason: null,
+        closedAt: new Date(),
+        stage: DealStage.RELATIONSHIP_MANAGEMENT,
+      },
+    }),
+    ...(alreadyInRelationshipManagement
+      ? []
+      : [
+          prisma.stageHistoryEntry.create({
+            data: { contactId, fromStage: contact.stage, toStage: DealStage.RELATIONSHIP_MANAGEMENT },
+          }),
+        ]),
+  ]);
+
   revalidatePath("/pipeline");
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");
@@ -158,10 +178,27 @@ export async function markDealLost(contactId: string, reason: string): Promise<v
 }
 
 export async function reopenDeal(contactId: string): Promise<void> {
-  await prisma.contact.update({
-    where: { id: contactId },
-    data: { status: DealStatus.OPEN, lostReason: null, closedAt: null },
-  });
+  const contact = await prisma.contact.findUnique({ where: { id: contactId }, select: { stage: true } });
+  if (!contact) return;
+
+  // A deal reopened from relationship management drops back into the
+  // active pipeline at the last working stage rather than staying "closed".
+  const backToStage = contact.stage === DealStage.RELATIONSHIP_MANAGEMENT ? DealStage.NEGOTIATION : contact.stage;
+
+  await prisma.$transaction([
+    prisma.contact.update({
+      where: { id: contactId },
+      data: { status: DealStatus.OPEN, lostReason: null, closedAt: null, stage: backToStage },
+    }),
+    ...(backToStage === contact.stage
+      ? []
+      : [
+          prisma.stageHistoryEntry.create({
+            data: { contactId, fromStage: contact.stage, toStage: backToStage },
+          }),
+        ]),
+  ]);
+
   revalidatePath("/pipeline");
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");

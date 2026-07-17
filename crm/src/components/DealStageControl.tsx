@@ -20,30 +20,35 @@ export default function DealStageControl({
 }) {
   const [isPending, startTransition] = useTransition();
   const colors = STAGE_COLORS[stage];
+  const inRelationshipManagement = stage === "RELATIONSHIP_MANAGEMENT";
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <select
-        value={stage}
-        disabled={isPending}
-        onChange={(e) => {
-          const next = e.target.value as DealStage;
-          startTransition(() => {
-            moveDealStage(contactId, next);
-          });
-        }}
-        className={clsx(
-          "rounded-lg border-none px-3 py-1.5 text-sm font-medium",
-          colors.bg,
-          colors.text,
-        )}
-      >
-        {STAGE_ORDER.map((s) => (
-          <option key={s} value={s}>
-            {STAGE_LABELS[s]}
-          </option>
-        ))}
-      </select>
+      {inRelationshipManagement ? (
+        <Badge className={`${colors.bg} ${colors.text}`}>{STAGE_LABELS[stage]}</Badge>
+      ) : (
+        <select
+          value={stage}
+          disabled={isPending}
+          onChange={(e) => {
+            const next = e.target.value as DealStage;
+            startTransition(() => {
+              moveDealStage(contactId, next);
+            });
+          }}
+          className={clsx(
+            "rounded-lg border-none px-3 py-1.5 text-sm font-medium",
+            colors.bg,
+            colors.text,
+          )}
+        >
+          {STAGE_ORDER.map((s) => (
+            <option key={s} value={s}>
+              {STAGE_LABELS[s]}
+            </option>
+          ))}
+        </select>
+      )}
 
       {status === "OPEN" && (
         <>

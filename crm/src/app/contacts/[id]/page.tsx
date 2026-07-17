@@ -8,6 +8,7 @@ import { Badge, ButtonLink, Card, PageHeader } from "@/components/ui";
 import DeleteButton from "@/components/DeleteButton";
 import DealStageControl from "@/components/DealStageControl";
 import ContactJournal from "@/components/ContactJournal";
+import ReminderList from "@/components/ReminderList";
 import { STAGE_LABELS } from "@/lib/stages";
 
 function formatCurrency(value: number) {
@@ -23,6 +24,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
       company: true,
       stageHistory: { orderBy: { changedAt: "asc" } },
       journalEntries: { orderBy: { createdAt: "desc" } },
+      reminders: { orderBy: { dueAt: "asc" } },
     },
   });
 
@@ -165,6 +167,13 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
             </ol>
           </Card>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          Reminders
+        </h2>
+        <ReminderList contactId={contact.id} reminders={contact.reminders} />
       </div>
 
       <div className="mt-6">
