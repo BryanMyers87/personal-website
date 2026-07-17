@@ -2,28 +2,28 @@
 
 import { useChartTheme, STATUS } from "./theme";
 
-export default function SubmissionHealthBar({
-  approved,
+export default function CloseHealthBar({
+  won,
   lost,
   stillOpen,
 }: {
-  approved: number;
+  won: number;
   lost: number;
   stillOpen: number;
 }) {
   const theme = useChartTheme();
-  const total = approved + lost + stillOpen;
+  const total = won + lost + stillOpen;
   const good = theme.isDark ? STATUS.good.dark : STATUS.good.light;
   const critical = theme.isDark ? STATUS.critical.dark : STATUS.critical.light;
   const neutral = theme.isDark ? STATUS.neutral.dark : STATUS.neutral.light;
 
   if (total === 0) {
-    return <p className="text-sm text-zinc-500 dark:text-zinc-400">No leads have reached submission yet.</p>;
+    return <p className="text-sm text-zinc-500 dark:text-zinc-400">No deals have reached Negotiation yet.</p>;
   }
 
   const segments = [
-    { key: "approved", value: approved, color: good, label: "Approved" },
-    { key: "open", value: stillOpen, color: neutral, label: "Still in review" },
+    { key: "won", value: won, color: good, label: "Won" },
+    { key: "open", value: stillOpen, color: neutral, label: "Still negotiating" },
     { key: "lost", value: lost, color: critical, label: "Lost" },
   ].filter((s) => s.value > 0);
 

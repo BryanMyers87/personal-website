@@ -3,9 +3,9 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useChartTheme, STAGE_RAMP } from "./theme";
 import { STAGE_SHORT_LABELS } from "@/lib/stages";
-import type { LeadStage } from "@/generated/prisma/enums";
+import type { DealStage } from "@/generated/prisma/enums";
 
-export type FunnelDatum = { stage: LeadStage; label: string; count: number };
+export type FunnelDatum = { stage: DealStage; label: string; count: number };
 
 export default function FunnelChart({ data }: { data: FunnelDatum[] }) {
   const theme = useChartTheme();
@@ -29,7 +29,7 @@ export default function FunnelChart({ data }: { data: FunnelDatum[] }) {
             color: theme.tooltipText,
           }}
           labelStyle={{ color: theme.tooltipText, fontWeight: 600 }}
-          formatter={(value) => [`${value} lead${value === 1 ? "" : "s"}`, "Reached this stage"]}
+          formatter={(value) => [`${value} deal${value === 1 ? "" : "s"}`, "Reached this stage"]}
         />
         <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={24}>
           {chartData.map((entry, i) => (

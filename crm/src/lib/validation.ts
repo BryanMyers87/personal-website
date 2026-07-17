@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { LeadStage } from "@/generated/prisma/enums";
 
 const optionalString = z
   .string()
@@ -33,24 +32,11 @@ export const contactSchema = z.object({
   phone: optionalString,
   title: optionalString,
   companyId: optionalId,
-  notes: optionalString,
-});
-
-export const leadStageValues = Object.values(LeadStage) as [string, ...string[]];
-
-export const leadSchema = z.object({
-  title: z.string().trim().min(1, "Deal title is required"),
-  contactId: z.string().trim().min(1, "A contact is required"),
-  companyId: optionalId,
-  stage: z.enum(leadStageValues).optional(),
   source: optionalString,
-  estimatedValue: z
-    .union([z.literal(""), z.coerce.number().nonnegative()])
-    .optional(),
+  estimatedValue: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
   appointmentDate: optionalString,
   notes: optionalString,
 });
 
 export type CompanyInput = z.infer<typeof companySchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
-export type LeadInput = z.infer<typeof leadSchema>;

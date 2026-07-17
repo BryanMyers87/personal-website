@@ -1,16 +1,17 @@
 import { startOfWeek, subWeeks, format } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { STAGE_LABELS, STAGE_ORDER } from "@/lib/stages";
-import { LeadStage } from "@/generated/prisma/enums";
+import { DealStage } from "@/generated/prisma/enums";
 
 const WEEKS_OF_HISTORY = 12;
 
-// Consecutive stage pairs that make up the core delivery cycle:
-// booking the appointment -> performing the audit -> submitting -> approval.
-const CYCLE_TRANSITIONS: [LeadStage, LeadStage][] = [
-  [LeadStage.APPOINTMENT_BOOKED, LeadStage.AUDIT_IN_PROGRESS],
-  [LeadStage.AUDIT_IN_PROGRESS, LeadStage.SUBMITTED_FOR_APPROVAL],
-  [LeadStage.SUBMITTED_FOR_APPROVAL, LeadStage.APPROVED],
+// Consecutive stage pairs that make up the pipeline:
+// prospect -> qualify -> meeting -> proposal -> negotiation.
+const CYCLE_TRANSITIONS: [DealStage, DealStage][] = [
+  [DealStage.PROSPECT, DealStage.LEAD_QUALIFICATION],
+  [DealStage.LEAD_QUALIFICATION, DealStage.MEETING],
+  [DealStage.MEETING, DealStage.PROPOSAL],
+  [DealStage.PROPOSAL, DealStage.NEGOTIATION],
 ];
 
 function average(values: number[]): number | null {
@@ -28,10 +29,9 @@ function weekBuckets(): { key: string; label: string }[] {
 }
 
 export async function getAnalytics() {
-  const [contactCount, companyCount, leads, historyEntries] = await Promise.all([
-    prisma.contact.count(),
+  const [companyCount, deals, historyEntries] = await Promise.all([
     prisma.company.count(),
-    prisma.lead.findMany({
+    prisma.contact.findMany({
       select: {
         id: true,
         stage: true,
@@ -40,95 +40,95 @@ export async function getAnalytics() {
         estimatedValue: true,
         appointmentDate: true,
         createdAt: true,
+        closedAt: true,
       },
     }),
     prisma.stageHistoryEntry.findMany({
       orderBy: { changedAt: "asc" },
-      select: { leadId: true, fromStage: true, toStage: true, changedAt: true },
+      select: { contactId: true, fromStage: true, toStage: true, changedAt: true },
     }),
   ]);
 
   // --- Top-line totals -----------------------------------------------------
-  const openLeads = leads.filter((l) => l.status === "OPEN");
-  const wonLeads = leads.filter((l) => l.status === "WON");
-  const lostLeads = leads.filter((l) => l.status === "LOST");
-  const openValue = openLeads.reduce((sum, l) => sum + (l.estimatedValue ?? 0), 0);
-  const wonValue = wonLeads.reduce((sum, l) => sum + (l.estimatedValue ?? 0), 0);
+  const openDeals = deals.filter((d) => d.status === "OPEN");
+  const wonDeals = deals.filter((d) => d.status === "WON");
+  const lostDeals = deals.filter((d) => d.status === "LOST");
+  const openValue = openDeals.reduce((sum, d) => sum + (d.estimatedValue ?? 0), 0);
+  const wonValue = wonDeals.reduce((sum, d) => sum + (d.estimatedValue ?? 0), 0);
 
   const totals = {
-    contacts: contactCount,
+    contacts: deals.length,
     companies: companyCount,
-    leads: leads.length,
-    open: openLeads.length,
-    won: wonLeads.length,
-    lost: lostLeads.length,
+    deals: deals.length,
+    open: openDeals.length,
+    won: wonDeals.length,
+    lost: lostDeals.length,
     openValue,
     wonValue,
-    winRate: wonLeads.length + lostLeads.length > 0 ? wonLeads.length / (wonLeads.length + lostLeads.length) : null,
+    winRate: wonDeals.length + lostDeals.length > 0 ? wonDeals.length / (wonDeals.length + lostDeals.length) : null,
   };
 
-  // --- Funnel: how many leads have ever reached each stage ------------------
-  const reachedStageLeadIds = new Map<LeadStage, Set<string>>();
-  for (const stage of STAGE_ORDER) reachedStageLeadIds.set(stage, new Set());
+  // --- Funnel: how many deals have ever reached each stage ------------------
+  const reachedStageDealIds = new Map<DealStage, Set<string>>();
+  for (const stage of STAGE_ORDER) reachedStageDealIds.set(stage, new Set());
   for (const entry of historyEntries) {
-    reachedStageLeadIds.get(entry.toStage)?.add(entry.leadId);
+    reachedStageDealIds.get(entry.toStage)?.add(entry.contactId);
   }
   const funnel = STAGE_ORDER.map((stage) => ({
     stage,
     label: STAGE_LABELS[stage],
-    count: reachedStageLeadIds.get(stage)?.size ?? 0,
+    count: reachedStageDealIds.get(stage)?.size ?? 0,
   }));
 
-  // --- Appointments booked ---------------------------------------------------
-  const appointmentEntries = historyEntries.filter((e) => e.toStage === LeadStage.APPOINTMENT_BOOKED);
+  // --- Meetings booked ---------------------------------------------------
+  const meetingEntries = historyEntries.filter((e) => e.toStage === DealStage.MEETING);
   const buckets = weekBuckets();
   const bucketIndex = new Map(buckets.map((b, i) => [b.key, i]));
-  const appointmentsByWeek = buckets.map((b) => ({ week: b.label, count: 0 }));
-  for (const entry of appointmentEntries) {
+  const meetingsByWeek = buckets.map((b) => ({ week: b.label, count: 0 }));
+  for (const entry of meetingEntries) {
     const key = format(startOfWeek(entry.changedAt, { weekStartsOn: 1 }), "yyyy-MM-dd");
     const idx = bucketIndex.get(key);
-    if (idx !== undefined) appointmentsByWeek[idx].count += 1;
+    if (idx !== undefined) meetingsByWeek[idx].count += 1;
   }
 
-  const leadsByWeek = buckets.map((b) => ({ week: b.label, count: 0 }));
-  for (const lead of leads) {
-    const key = format(startOfWeek(lead.createdAt, { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const dealsByWeek = buckets.map((b) => ({ week: b.label, count: 0 }));
+  for (const deal of deals) {
+    const key = format(startOfWeek(deal.createdAt, { weekStartsOn: 1 }), "yyyy-MM-dd");
     const idx = bucketIndex.get(key);
-    if (idx !== undefined) leadsByWeek[idx].count += 1;
+    if (idx !== undefined) dealsByWeek[idx].count += 1;
   }
 
-  // --- Submission health: of leads that reached submission, how many won? ---
-  const reachedSubmission = reachedStageLeadIds.get(LeadStage.SUBMITTED_FOR_APPROVAL) ?? new Set();
-  const leadById = new Map(leads.map((l) => [l.id, l]));
-  let submittedApproved = 0;
-  let submittedLost = 0;
-  let submittedOpen = 0;
-  for (const leadId of reachedSubmission) {
-    const lead = leadById.get(leadId);
-    if (!lead) continue;
-    if (lead.status === "WON") submittedApproved += 1;
-    else if (lead.status === "LOST") submittedLost += 1;
-    else submittedOpen += 1;
+  // --- Close health: of deals that reached Negotiation, how many won? -------
+  const reachedNegotiation = reachedStageDealIds.get(DealStage.NEGOTIATION) ?? new Set();
+  const dealById = new Map(deals.map((d) => [d.id, d]));
+  let negotiationWon = 0;
+  let negotiationLost = 0;
+  let negotiationOpen = 0;
+  for (const dealId of reachedNegotiation) {
+    const deal = dealById.get(dealId);
+    if (!deal) continue;
+    if (deal.status === "WON") negotiationWon += 1;
+    else if (deal.status === "LOST") negotiationLost += 1;
+    else negotiationOpen += 1;
   }
-  const submissionHealth = {
-    reached: reachedSubmission.size,
-    approved: submittedApproved,
-    lost: submittedLost,
-    stillOpen: submittedOpen,
-    successRate:
-      submittedApproved + submittedLost > 0 ? submittedApproved / (submittedApproved + submittedLost) : null,
+  const closeHealth = {
+    reached: reachedNegotiation.size,
+    won: negotiationWon,
+    lost: negotiationLost,
+    stillOpen: negotiationOpen,
+    successRate: negotiationWon + negotiationLost > 0 ? negotiationWon / (negotiationWon + negotiationLost) : null,
   };
 
   // --- Cycle time per transition, computed from consecutive history rows ----
-  const entriesByLead = new Map<string, typeof historyEntries>();
+  const entriesByDeal = new Map<string, typeof historyEntries>();
   for (const entry of historyEntries) {
-    const arr = entriesByLead.get(entry.leadId) ?? [];
+    const arr = entriesByDeal.get(entry.contactId) ?? [];
     arr.push(entry);
-    entriesByLead.set(entry.leadId, arr);
+    entriesByDeal.set(entry.contactId, arr);
   }
 
   const transitionDurationsMs = new Map<string, number[]>();
-  for (const [, entries] of entriesByLead) {
+  for (const [, entries] of entriesByDeal) {
     for (let i = 1; i < entries.length; i++) {
       const prev = entries[i - 1];
       const curr = entries[i];
@@ -152,40 +152,38 @@ export async function getAnalytics() {
     };
   });
 
-  // Overall cycle: appointment booked -> approved (may span multiple hops).
-  const overallDurations: number[] = [];
-  for (const [, entries] of entriesByLead) {
-    const bookedEntry = entries.find((e) => e.toStage === LeadStage.APPOINTMENT_BOOKED);
-    const approvedEntry = entries.find((e) => e.toStage === LeadStage.APPROVED);
-    if (bookedEntry && approvedEntry && approvedEntry.changedAt >= bookedEntry.changedAt) {
-      overallDurations.push(approvedEntry.changedAt.getTime() - bookedEntry.changedAt.getTime());
+  // Overall cycle: created -> won (time to close a deal).
+  const wonDurations: number[] = [];
+  for (const deal of wonDeals) {
+    if (deal.closedAt && deal.closedAt >= deal.createdAt) {
+      wonDurations.push(deal.closedAt.getTime() - deal.createdAt.getTime());
     }
   }
-  const overallAvgMs = average(overallDurations);
+  const wonAvgMs = average(wonDurations);
   const totalCycleTime = {
-    avgHours: overallAvgMs != null ? overallAvgMs / (1000 * 60 * 60) : null,
-    count: overallDurations.length,
+    avgHours: wonAvgMs != null ? wonAvgMs / (1000 * 60 * 60) : null,
+    count: wonDurations.length,
   };
 
-  // --- Leads by source --------------------------------------------------------
+  // --- Deals by source --------------------------------------------------------
   const sourceCounts = new Map<string, number>();
-  for (const lead of leads) {
-    const key = lead.source?.trim() || "Unspecified";
+  for (const deal of deals) {
+    const key = deal.source?.trim() || "Unspecified";
     sourceCounts.set(key, (sourceCounts.get(key) ?? 0) + 1);
   }
-  const leadsBySource = Array.from(sourceCounts.entries())
+  const dealsBySource = Array.from(sourceCounts.entries())
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count);
 
   return {
     totals,
     funnel,
-    appointments: { total: appointmentEntries.length, byWeek: appointmentsByWeek },
-    submissionHealth,
+    meetings: { total: meetingEntries.length, byWeek: meetingsByWeek },
+    closeHealth,
     cycleTimes,
     totalCycleTime,
-    leadsBySource,
-    leadsOverTime: leadsByWeek,
+    dealsBySource,
+    dealsOverTime: dealsByWeek,
   };
 }
 

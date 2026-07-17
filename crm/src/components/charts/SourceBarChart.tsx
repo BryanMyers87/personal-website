@@ -39,7 +39,7 @@ export default function SourceBarChart({ data }: { data: SourceDatum[] }) {
             color: theme.tooltipText,
           }}
           labelStyle={{ color: theme.tooltipText, fontWeight: 600 }}
-          formatter={(value) => [`${value} lead${value === 1 ? "" : "s"}`, "Leads"]}
+          formatter={(value) => [`${value} deal${value === 1 ? "" : "s"}`, "Deals"]}
         />
         <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={22}>
           {sorted.map((entry) => (

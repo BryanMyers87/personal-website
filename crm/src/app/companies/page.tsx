@@ -18,7 +18,7 @@ export default async function CompaniesPage({
         }
       : undefined,
     include: {
-      _count: { select: { contacts: true, leads: true } },
+      _count: { select: { contacts: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -27,7 +27,7 @@ export default async function CompaniesPage({
     <div>
       <PageHeader
         title="Companies"
-        description="The organizations behind your contacts and leads."
+        description="The organizations behind your contacts and deals."
         action={
           <ButtonLink href="/companies/new">
             <Plus size={16} /> New Company
@@ -79,9 +79,6 @@ export default async function CompaniesPage({
                 <div className="mt-4 flex gap-2">
                   <Badge className="bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                     {company._count.contacts} contact{company._count.contacts === 1 ? "" : "s"}
-                  </Badge>
-                  <Badge className="bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                    {company._count.leads} lead{company._count.leads === 1 ? "" : "s"}
                   </Badge>
                 </div>
               </Card>

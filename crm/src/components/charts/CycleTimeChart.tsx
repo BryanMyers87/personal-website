@@ -50,7 +50,7 @@ export default function CycleTimeChart({ data }: { data: CycleTimeDatum[] }) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={((_value: unknown, _name: unknown, ctx: any) => {
               const datum = ctx.payload as CycleTimeDatum & { displayHours: number };
-              return [formatDuration(datum.avgHours), `avg over ${datum.count} lead${datum.count === 1 ? "" : "s"}`];
+              return [formatDuration(datum.avgHours), `avg over ${datum.count} deal${datum.count === 1 ? "" : "s"}`];
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             }) as any}
           />

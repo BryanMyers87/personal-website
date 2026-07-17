@@ -24,7 +24,7 @@ export const STAGE_RAMP = {
 // Sequential "blue" mid-step, for single-series magnitude/trend charts.
 export const SEQUENTIAL_HUE = { light: "#2a78d6", dark: "#3987e5" };
 
-// Fixed-order categorical palette (validated), for the leads-by-source chart.
+// Fixed-order categorical palette (validated), for the deals-by-source chart.
 export const CATEGORICAL = {
   light: ["#2a78d6", "#1baf7a", "#eda100", "#008300", "#4a3aa7", "#e34948", "#e87ba4", "#eb6834"],
   dark: ["#3987e5", "#199e70", "#c98500", "#008300", "#9085e9", "#e66767", "#d55181", "#d95926"],

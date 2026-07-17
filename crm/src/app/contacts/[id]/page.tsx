@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Building2, Mail, Pencil, Phone } from "lucide-react";
+import { format, formatDistanceStrict, formatDistanceToNow } from "date-fns";
+import { Building2, Calendar, Mail, Pencil, Phone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { deleteContact } from "@/actions/contacts";
 import { Badge, ButtonLink, Card, PageHeader } from "@/components/ui";
 import DeleteButton from "@/components/DeleteButton";
-import { STAGE_COLORS, STAGE_LABELS } from "@/lib/stages";
-import { formatDistanceToNow } from "date-fns";
+import DealStageControl from "@/components/DealStageControl";
+import { STAGE_LABELS } from "@/lib/stages";
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+}
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,11 +20,15 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
     where: { id },
     include: {
       company: true,
-      leads: { orderBy: { createdAt: "desc" }, include: { company: true } },
+      stageHistory: { orderBy: { changedAt: "asc" } },
     },
   });
 
   if (!contact) notFound();
+
+  const history = contact.stageHistory;
+  const firstEntry = history[0];
+  const cycleEnd = contact.status === "OPEN" ? new Date() : contact.closedAt ?? new Date();
 
   return (
     <div>
@@ -38,6 +47,10 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           </div>
         }
       />
+
+      <div className="mb-6">
+        <DealStageControl contactId={contact.id} stage={contact.stage} status={contact.status} lostReason={contact.lostReason} />
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-1">
@@ -69,10 +82,31 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
                 </a>
               </div>
             )}
-            {!contact.company && !contact.email && !contact.phone && (
+            {contact.appointmentDate && (
+              <div className="flex items-center gap-2">
+                <Calendar size={15} className="text-zinc-400" />
+                <span>{format(contact.appointmentDate, "PPp")}</span>
+              </div>
+            )}
+            {!contact.company && !contact.email && !contact.phone && !contact.appointmentDate && (
               <p className="text-zinc-400">No additional details yet.</p>
             )}
           </dl>
+
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            {contact.estimatedValue != null && (
+              <div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Estimated value</p>
+                <p className="text-lg font-semibold">{formatCurrency(contact.estimatedValue)}</p>
+              </div>
+            )}
+            {contact.source && (
+              <div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Source</p>
+                <p className="text-sm font-medium">{contact.source}</p>
+              </div>
+            )}
+          </div>
 
           {contact.notes && (
             <>
@@ -89,49 +123,45 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         </Card>
 
         <div className="lg:col-span-2">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Leads ({contact.leads.length})
+              Stage History
             </h2>
-            <ButtonLink href={`/leads/new?contactId=${contact.id}`} variant="secondary">
-              New Lead
-            </ButtonLink>
+            {firstEntry && (
+              <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                Total cycle time: {formatDistanceStrict(firstEntry.changedAt, cycleEnd)}
+              </Badge>
+            )}
           </div>
 
-          {contact.leads.length === 0 ? (
-            <Card className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-              No leads yet for this contact.
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {contact.leads.map((lead) => (
-                <Link key={lead.id} href={`/leads/${lead.id}`}>
-                  <Card className="flex items-center justify-between p-4 transition-colors hover:border-indigo-300 dark:hover:border-indigo-700">
-                    <div>
-                      <p className="font-medium">{lead.title}</p>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {lead.company?.name ?? "No company"} · Created{" "}
-                        {formatDistanceToNow(lead.createdAt, { addSuffix: true })}
+          <Card className="p-4">
+            <ol className="space-y-4">
+              {history.map((entry, idx) => {
+                const next = history[idx + 1];
+                const segmentEnd = next?.changedAt ?? cycleEnd;
+                const isLast = idx === history.length - 1;
+                return (
+                  <li key={entry.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-indigo-500" />
+                      {!isLast && <span className="w-px flex-1 bg-zinc-200 dark:bg-zinc-800" />}
+                    </div>
+                    <div className="pb-4">
+                      <p className="text-sm font-medium">
+                        {entry.fromStage ? `${STAGE_LABELS[entry.fromStage]} → ` : "Created at "}
+                        {STAGE_LABELS[entry.toStage]}
+                      </p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">{format(entry.changedAt, "PPp")}</p>
+                      <p className="mt-1 text-xs text-zinc-400">
+                        Time in this stage: {formatDistanceStrict(entry.changedAt, segmentEnd)}
+                        {isLast && contact.status === "OPEN" ? " (so far)" : ""}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {lead.status === "LOST" && (
-                        <Badge className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Lost</Badge>
-                      )}
-                      {lead.status === "WON" && (
-                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                          Won
-                        </Badge>
-                      )}
-                      <Badge className={`${STAGE_COLORS[lead.stage].bg} ${STAGE_COLORS[lead.stage].text}`}>
-                        {STAGE_LABELS[lead.stage]}
-                      </Badge>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
+                  </li>
+                );
+              })}
+            </ol>
+          </Card>
         </div>
       </div>
     </div>

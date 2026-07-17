@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mail, Phone, Plus, Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Card, EmptyState, PageHeader, ButtonLink, Badge } from "@/components/ui";
+import { STAGE_COLORS, STAGE_LABELS } from "@/lib/stages";
 
 export default async function ContactsPage({
   searchParams,
@@ -24,7 +25,6 @@ export default async function ContactsPage({
       : undefined,
     include: {
       company: true,
-      _count: { select: { leads: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -33,7 +33,7 @@ export default async function ContactsPage({
     <div>
       <PageHeader
         title="Contacts"
-        description="Everyone you're in touch with across Inflate AI's pipeline."
+        description="Everyone in your pipeline — each contact is a deal moving through its stages."
         action={
           <ButtonLink href="/contacts/new">
             <Plus size={16} /> New Contact
@@ -78,7 +78,7 @@ export default async function ContactsPage({
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Company</th>
                 <th className="px-4 py-3 font-medium">Contact info</th>
-                <th className="px-4 py-3 font-medium">Leads</th>
+                <th className="px-4 py-3 font-medium">Stage</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -115,9 +115,19 @@ export default async function ContactsPage({
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge className="bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                      {contact._count.leads} lead{contact._count.leads === 1 ? "" : "s"}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge className={`${STAGE_COLORS[contact.stage].bg} ${STAGE_COLORS[contact.stage].text}`}>
+                        {STAGE_LABELS[contact.stage]}
+                      </Badge>
+                      {contact.status === "WON" && (
+                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                          Won
+                        </Badge>
+                      )}
+                      {contact.status === "LOST" && (
+                        <Badge className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Lost</Badge>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

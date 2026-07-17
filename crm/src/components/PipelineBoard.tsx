@@ -4,18 +4,18 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { clsx } from "clsx";
 import { GripVertical } from "lucide-react";
-import { moveLeadStage } from "@/actions/leads";
+import { moveDealStage } from "@/actions/contacts";
 import { STAGE_COLORS, STAGE_LABELS, STAGE_ORDER } from "@/lib/stages";
-import type { LeadStage } from "@/generated/prisma/enums";
+import type { DealStage } from "@/generated/prisma/enums";
 import { Badge } from "@/components/ui";
 
-export type PipelineLead = {
+export type PipelineDeal = {
   id: string;
-  title: string;
-  stage: LeadStage;
+  firstName: string;
+  lastName: string;
+  stage: DealStage;
   status: "OPEN" | "WON" | "LOST";
   estimatedValue: number | null;
-  contact: { firstName: string; lastName: string };
   company: { name: string } | null;
 };
 
@@ -23,31 +23,31 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 }
 
-export default function PipelineBoard({ leads }: { leads: PipelineLead[] }) {
+export default function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragOverStage, setDragOverStage] = useState<LeadStage | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const columns = STAGE_ORDER.map((stage) => ({
     stage,
-    leads: leads.filter((lead) => lead.stage === stage),
+    deals: deals.filter((deal) => deal.stage === stage),
   }));
 
-  function handleDrop(stage: LeadStage) {
+  function handleDrop(stage: DealStage) {
     setDragOverStage(null);
     if (!draggingId) return;
-    const leadId = draggingId;
+    const contactId = draggingId;
     setDraggingId(null);
     startTransition(() => {
-      moveLeadStage(leadId, stage);
+      moveDealStage(contactId, stage);
     });
   }
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
-      {columns.map(({ stage, leads: stageLeads }) => {
+      {columns.map(({ stage, deals: stageDeals }) => {
         const colors = STAGE_COLORS[stage];
-        const totalValue = stageLeads.reduce((sum, lead) => sum + (lead.estimatedValue ?? 0), 0);
+        const totalValue = stageDeals.reduce((sum, deal) => sum + (deal.estimatedValue ?? 0), 0);
 
         return (
           <div
@@ -75,7 +75,7 @@ export default function PipelineBoard({ leads }: { leads: PipelineLead[] }) {
                   <p className="text-sm font-semibold">{STAGE_LABELS[stage]}</p>
                 </div>
                 <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                  {stageLeads.length}
+                  {stageDeals.length}
                 </Badge>
               </div>
               {totalValue > 0 && (
@@ -84,48 +84,47 @@ export default function PipelineBoard({ leads }: { leads: PipelineLead[] }) {
             </div>
 
             <div className="flex-1 space-y-2 p-2" style={{ minHeight: 160 }}>
-              {stageLeads.length === 0 ? (
-                <p className="px-2 py-6 text-center text-xs text-zinc-400">No leads</p>
+              {stageDeals.length === 0 ? (
+                <p className="px-2 py-6 text-center text-xs text-zinc-400">No deals</p>
               ) : (
-                stageLeads.map((lead) => (
+                stageDeals.map((deal) => (
                   <div
-                    key={lead.id}
+                    key={deal.id}
                     draggable
-                    onDragStart={() => setDraggingId(lead.id)}
+                    onDragStart={() => setDraggingId(deal.id)}
                     onDragEnd={() => setDraggingId(null)}
                     className={clsx(
                       "group rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition-opacity dark:border-zinc-800 dark:bg-zinc-950",
-                      draggingId === lead.id && "opacity-40",
-                      lead.status === "LOST" && "opacity-60",
+                      draggingId === deal.id && "opacity-40",
+                      deal.status === "LOST" && "opacity-60",
                     )}
                   >
                     <div className="flex items-start gap-2">
                       <GripVertical size={14} className="mt-0.5 shrink-0 cursor-grab text-zinc-300 dark:text-zinc-700" />
-                      <Link href={`/leads/${lead.id}`} className="min-w-0 flex-1">
+                      <Link href={`/contacts/${deal.id}`} className="min-w-0 flex-1">
                         <p
                           className={clsx(
                             "truncate text-sm font-medium hover:underline",
-                            lead.status === "LOST" && "line-through",
+                            deal.status === "LOST" && "line-through",
                           )}
                         >
-                          {lead.title}
+                          {deal.firstName} {deal.lastName}
                         </p>
-                        <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                          {lead.contact.firstName} {lead.contact.lastName}
-                          {lead.company ? ` · ${lead.company.name}` : ""}
-                        </p>
+                        {deal.company && (
+                          <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{deal.company.name}</p>
+                        )}
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          {lead.estimatedValue != null && (
+                          {deal.estimatedValue != null && (
                             <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                              {formatCurrency(lead.estimatedValue)}
+                              {formatCurrency(deal.estimatedValue)}
                             </Badge>
                           )}
-                          {lead.status === "WON" && (
+                          {deal.status === "WON" && (
                             <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                               Won
                             </Badge>
                           )}
-                          {lead.status === "LOST" && (
+                          {deal.status === "LOST" && (
                             <Badge className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Lost</Badge>
                           )}
                         </div>

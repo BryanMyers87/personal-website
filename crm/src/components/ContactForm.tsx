@@ -14,6 +14,9 @@ type ContactFormValues = {
   phone?: string | null;
   title?: string | null;
   companyId?: string | null;
+  source?: string | null;
+  estimatedValue?: number | null;
+  appointmentDate?: Date | string | null;
   notes?: string | null;
 };
 
@@ -29,6 +32,10 @@ export default function ContactForm({
   submitLabel: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+
+  const appointmentValue = contact?.appointmentDate
+    ? new Date(contact.appointmentDate).toISOString().slice(0, 16)
+    : "";
 
   return (
     <form action={formAction} className="space-y-5">
@@ -60,6 +67,30 @@ export default function ContactForm({
             ))}
           </select>
         </div>
+
+        <Field label="Deal source" name="source" defaultValue={contact?.source ?? ""} placeholder="e.g. Referral, Website, Cold Outreach" />
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Estimated deal value ($)</label>
+          <input
+            name="estimatedValue"
+            type="number"
+            min={0}
+            step="0.01"
+            defaultValue={contact?.estimatedValue ?? ""}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Meeting / appointment date</label>
+          <input
+            name="appointmentDate"
+            type="datetime-local"
+            defaultValue={appointmentValue}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+        </div>
       </div>
 
       <div>
@@ -86,6 +117,7 @@ function Field({
   name,
   type = "text",
   defaultValue,
+  placeholder,
   error,
   required,
 }: {
@@ -93,6 +125,7 @@ function Field({
   name: string;
   type?: string;
   defaultValue?: string;
+  placeholder?: string;
   error?: string;
   required?: boolean;
 }) {
@@ -105,6 +138,7 @@ function Field({
         name={name}
         type={type}
         defaultValue={defaultValue}
+        placeholder={placeholder}
         required={required}
         className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
       />

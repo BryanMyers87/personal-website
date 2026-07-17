@@ -8,9 +8,14 @@ import PipelineBoard from "@/components/PipelineBoard";
 export const dynamic = "force-dynamic";
 
 export default async function PipelinePage() {
-  const leads = await prisma.lead.findMany({
-    include: {
-      contact: { select: { firstName: true, lastName: true } },
+  const deals = await prisma.contact.findMany({
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      stage: true,
+      status: true,
+      estimatedValue: true,
       company: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -20,26 +25,26 @@ export default async function PipelinePage() {
     <div>
       <PageHeader
         title="Pipeline"
-        description="Drag leads across stages as they move through your process."
+        description="Drag contacts across stages as their deals move through your process."
         action={
-          <ButtonLink href="/leads/new">
-            <Plus size={16} /> New Lead
+          <ButtonLink href="/contacts/new">
+            <Plus size={16} /> New Contact
           </ButtonLink>
         }
       />
 
-      {leads.length === 0 ? (
+      {deals.length === 0 ? (
         <EmptyState
-          title="No leads in the pipeline yet"
-          description="Create your first lead to start tracking it through your stages."
+          title="No deals in the pipeline yet"
+          description="Add your first contact to start tracking it through your stages."
           action={
-            <ButtonLink href="/leads/new">
-              <Plus size={16} /> New Lead
+            <ButtonLink href="/contacts/new">
+              <Plus size={16} /> New Contact
             </ButtonLink>
           }
         />
       ) : (
-        <PipelineBoard leads={leads} />
+        <PipelineBoard deals={deals} />
       )}
     </div>
   );

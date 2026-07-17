@@ -5,7 +5,7 @@ import FunnelChart from "@/components/charts/FunnelChart";
 import TrendChart from "@/components/charts/TrendChart";
 import CycleTimeChart from "@/components/charts/CycleTimeChart";
 import SourceBarChart from "@/components/charts/SourceBarChart";
-import SubmissionHealthBar from "@/components/charts/SubmissionHealthBar";
+import CloseHealthBar from "@/components/charts/CloseHealthBar";
 
 // This dashboard reads live data on every request; it must never be served
 // from a build-time static snapshot.
@@ -24,12 +24,12 @@ export default async function AnalyticsPage() {
 
   return (
     <div>
-      <PageHeader title="Analytics" description="A high-level read on contacts, the pipeline, and delivery cycle times." />
+      <PageHeader title="Analytics" description="A high-level read on leads coming in and deals completing." />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
-          label="Total leads"
-          value={data.totals.leads}
+          label="Total deals"
+          value={data.totals.deals}
           sub={`${data.totals.open} open · ${data.totals.won} won · ${data.totals.lost} lost`}
           icon={<TrendingUp size={18} />}
         />
@@ -40,9 +40,9 @@ export default async function AnalyticsPage() {
           icon={<Users2 size={18} />}
         />
         <StatTile
-          label="Appointments booked"
-          value={data.appointments.total}
-          sub="Leads that reached Appointment Booked"
+          label="Meetings booked"
+          value={data.meetings.total}
+          sub="Deals that reached Meeting"
           icon={<CalendarCheck size={18} />}
         />
         <StatTile
@@ -56,21 +56,21 @@ export default async function AnalyticsPage() {
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <ChartCard
           title="Pipeline funnel"
-          description="Leads that have ever reached each stage"
+          description="Deals that have ever reached each stage"
           className="lg:col-span-2"
         >
           <FunnelChart data={data.funnel} />
         </ChartCard>
 
-        <ChartCard title="Submission health" description="Outcome of leads once submitted for approval">
-          <SubmissionHealthBar
-            approved={data.submissionHealth.approved}
-            lost={data.submissionHealth.lost}
-            stillOpen={data.submissionHealth.stillOpen}
+        <ChartCard title="Close health" description="Outcome of deals once they reach Negotiation">
+          <CloseHealthBar
+            won={data.closeHealth.won}
+            lost={data.closeHealth.lost}
+            stillOpen={data.closeHealth.stillOpen}
           />
           <p className="mt-4 text-sm">
-            <span className="text-2xl font-semibold">{formatPercent(data.submissionHealth.successRate)}</span>
-            <span className="ml-2 text-zinc-500 dark:text-zinc-400">approval success rate</span>
+            <span className="text-2xl font-semibold">{formatPercent(data.closeHealth.successRate)}</span>
+            <span className="ml-2 text-zinc-500 dark:text-zinc-400">close success rate</span>
           </p>
         </ChartCard>
       </div>
@@ -78,32 +78,32 @@ export default async function AnalyticsPage() {
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <ChartCard
           title="Cycle time"
-          description="Average time per stage of the delivery cycle"
+          description="Average time per stage of the pipeline"
           className="lg:col-span-2"
         >
           <CycleTimeChart
             data={[
               ...data.cycleTimes.map((c) => ({ label: c.label, avgHours: c.avgHours, count: c.count })),
-              { label: "Total: Booked → Approved", avgHours: data.totalCycleTime.avgHours, count: data.totalCycleTime.count },
+              { label: "Total: Created → Won", avgHours: data.totalCycleTime.avgHours, count: data.totalCycleTime.count },
             ]}
           />
         </ChartCard>
 
-        <ChartCard title="Leads by source" description="Where leads are coming from">
-          {data.leadsBySource.length === 0 ? (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">No leads yet.</p>
+        <ChartCard title="Deals by source" description="Where deals are coming from">
+          {data.dealsBySource.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No deals yet.</p>
           ) : (
-            <SourceBarChart data={data.leadsBySource} />
+            <SourceBarChart data={data.dealsBySource} />
           )}
         </ChartCard>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard title="Leads created" description="New leads per week, last 12 weeks">
-          <TrendChart data={data.leadsOverTime} unitLabel="new leads" />
+        <ChartCard title="Leads created" description="New leads (contacts) per week, last 12 weeks">
+          <TrendChart data={data.dealsOverTime} unitLabel="new leads" />
         </ChartCard>
-        <ChartCard title="Appointments booked" description="Appointments booked per week, last 12 weeks">
-          <TrendChart data={data.appointments.byWeek} unitLabel="appointments" />
+        <ChartCard title="Meetings booked" description="Meetings booked per week, last 12 weeks">
+          <TrendChart data={data.meetings.byWeek} unitLabel="meetings" />
         </ChartCard>
       </div>
     </div>

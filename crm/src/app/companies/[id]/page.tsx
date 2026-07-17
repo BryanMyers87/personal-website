@@ -15,7 +15,6 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
     where: { id },
     include: {
       contacts: { orderBy: { createdAt: "desc" } },
-      leads: { orderBy: { createdAt: "desc" }, include: { contact: true } },
     },
   });
 
@@ -35,7 +34,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
             </ButtonLink>
             <DeleteButton
               action={deleteCompany.bind(null, company.id)}
-              confirmText={`Delete ${company.name}? Contacts and leads will be unlinked, not deleted.`}
+              confirmText={`Delete ${company.name}? Contacts will be unlinked, not deleted.`}
             />
           </div>
         }
@@ -96,65 +95,46 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
           </p>
         </Card>
 
-        <div className="space-y-8 lg:col-span-2">
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                Contacts ({company.contacts.length})
-              </h2>
-              <ButtonLink href={`/contacts/new?companyId=${company.id}`} variant="secondary">
-                New Contact
-              </ButtonLink>
-            </div>
-            {company.contacts.length === 0 ? (
-              <Card className="p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">No contacts yet.</Card>
-            ) : (
-              <Card className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                {company.contacts.map((contact) => (
-                  <Link
-                    key={contact.id}
-                    href={`/contacts/${contact.id}`}
-                    className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
-                  >
+        <div className="lg:col-span-2">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Contacts & deals ({company.contacts.length})
+            </h2>
+            <ButtonLink href={`/contacts/new?companyId=${company.id}`} variant="secondary">
+              New Contact
+            </ButtonLink>
+          </div>
+          {company.contacts.length === 0 ? (
+            <Card className="p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">No contacts yet.</Card>
+          ) : (
+            <div className="space-y-3">
+              {company.contacts.map((contact) => (
+                <Link key={contact.id} href={`/contacts/${contact.id}`}>
+                  <Card className="flex items-center justify-between p-4 transition-colors hover:border-indigo-300 dark:hover:border-indigo-700">
                     <div>
                       <p className="font-medium">
                         {contact.firstName} {contact.lastName}
                       </p>
                       {contact.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{contact.title}</p>}
                     </div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{contact.email}</p>
-                  </Link>
-                ))}
-              </Card>
-            )}
-          </div>
-
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Leads ({company.leads.length})
-            </h2>
-            {company.leads.length === 0 ? (
-              <Card className="p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">No leads yet.</Card>
-            ) : (
-              <div className="space-y-3">
-                {company.leads.map((lead) => (
-                  <Link key={lead.id} href={`/leads/${lead.id}`}>
-                    <Card className="flex items-center justify-between p-4 transition-colors hover:border-indigo-300 dark:hover:border-indigo-700">
-                      <div>
-                        <p className="font-medium">{lead.title}</p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {lead.contact.firstName} {lead.contact.lastName}
-                        </p>
-                      </div>
-                      <Badge className={`${STAGE_COLORS[lead.stage].bg} ${STAGE_COLORS[lead.stage].text}`}>
-                        {STAGE_LABELS[lead.stage]}
+                    <div className="flex items-center gap-2">
+                      {contact.status === "WON" && (
+                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                          Won
+                        </Badge>
+                      )}
+                      {contact.status === "LOST" && (
+                        <Badge className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Lost</Badge>
+                      )}
+                      <Badge className={`${STAGE_COLORS[contact.stage].bg} ${STAGE_COLORS[contact.stage].text}`}>
+                        {STAGE_LABELS[contact.stage]}
                       </Badge>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -9,17 +9,19 @@ datasource db {
   provider = "postgresql"
 }
 
-// The 5 stages of the lead pipeline, in order.
-enum LeadStage {
-  NEW
-  APPOINTMENT_BOOKED
-  AUDIT_IN_PROGRESS
-  SUBMITTED_FOR_APPROVAL
-  APPROVED
+// The 5 active stages of the pipeline, in order. Won/Lost are outcomes
+// (DealStatus), not stages — a deal is marked won or lost from whichever
+// stage it was in, it doesn't advance through separate "won"/"lost" columns.
+enum DealStage {
+  PROSPECT
+  LEAD_QUALIFICATION
+  MEETING
+  PROPOSAL
+  NEGOTIATION
 }
 
-// Outcome of a lead, independent of which stage it reached.
-enum LeadStatus {
+// Outcome of a deal, independent of which stage it reached.
+enum DealStatus {
   OPEN
   WON
   LOST
@@ -40,9 +42,10 @@ model Company {
   updatedAt DateTime @updatedAt
 
   contacts Contact[]
-  leads    Lead[]
 }
 
+// A contact IS the deal: every contact carries its own pipeline stage,
+// status, and deal metadata rather than a separate Lead entity.
 model Contact {
   id        String   @id @default(cuid())
   firstName String
@@ -57,37 +60,19 @@ model Contact {
   companyId String?
   company   Company? @relation(fields: [companyId], references: [id])
 
-  leads Lead[]
-
-  @@index([companyId])
-}
-
-model Lead {
-  id             String     @id @default(cuid())
-  title          String
-  stage          LeadStage  @default(NEW)
-  status         LeadStatus @default(OPEN)
+  stage          DealStage  @default(PROSPECT)
+  status         DealStatus @default(OPEN)
   source         String?
   estimatedValue Float?
-  notes          String?
 
-  // Business-meaning dates (distinct from stage-history timestamps,
-  // so an appointment can be scheduled ahead of the stage actually changing).
+  // Business-meaning date (distinct from stage-history timestamps, so a
+  // meeting can be scheduled ahead of the stage actually changing).
   appointmentDate DateTime?
   lostReason      String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  contactId String
-  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Restrict)
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
+  closedAt        DateTime?
 
   stageHistory StageHistoryEntry[]
 
-  @@index([contactId])
   @@index([companyId])
   @@index([stage])
 }
@@ -96,11 +81,11 @@ model Lead {
 // and the source of truth for cycle-time analytics (time between transitions).
 model StageHistoryEntry {
   id        String    @id @default(cuid())
-  leadId    String
-  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  fromStage LeadStage?
-  toStage   LeadStage
+  contactId String
+  contact   Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  fromStage DealStage?
+  toStage   DealStage
   changedAt DateTime  @default(now())
 
-  @@index([leadId])
+  @@index([contactId])
 }
