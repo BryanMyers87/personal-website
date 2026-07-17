@@ -8,13 +8,16 @@ import PipelineBoard from "@/components/PipelineBoard";
 export const dynamic = "force-dynamic";
 
 export default async function PipelinePage() {
+  // Won deals move to Relationship Management (a stage outside STAGE_ORDER,
+  // so they already fall out of the board's columns). Lost deals are
+  // excluded here explicitly so they land in the Holding Tank instead.
   const deals = await prisma.contact.findMany({
+    where: { status: { not: "LOST" } },
     select: {
       id: true,
       firstName: true,
       lastName: true,
       stage: true,
-      status: true,
       estimatedValue: true,
       company: { select: { name: true } },
     },

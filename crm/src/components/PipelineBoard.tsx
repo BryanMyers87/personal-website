@@ -9,12 +9,14 @@ import { STAGE_COLORS, STAGE_LABELS, STAGE_ORDER } from "@/lib/stages";
 import type { DealStage } from "@/generated/prisma/enums";
 import { Badge } from "@/components/ui";
 
+// Won and Lost deals never reach the board — Won moves to Relationship
+// Management (a stage outside STAGE_ORDER) and Lost is filtered out
+// upstream into the Holding Tank — so every deal here is always OPEN.
 export type PipelineDeal = {
   id: string;
   firstName: string;
   lastName: string;
   stage: DealStage;
-  status: "OPEN" | "WON" | "LOST";
   estimatedValue: number | null;
   company: { name: string } | null;
 };
@@ -96,38 +98,24 @@ export default function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
                     className={clsx(
                       "group rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition-opacity dark:border-zinc-800 dark:bg-zinc-950",
                       draggingId === deal.id && "opacity-40",
-                      deal.status === "LOST" && "opacity-60",
                     )}
                   >
                     <div className="flex items-start gap-2">
                       <GripVertical size={14} className="mt-0.5 shrink-0 cursor-grab text-zinc-300 dark:text-zinc-700" />
                       <Link href={`/contacts/${deal.id}`} className="min-w-0 flex-1">
-                        <p
-                          className={clsx(
-                            "truncate text-sm font-medium hover:underline",
-                            deal.status === "LOST" && "line-through",
-                          )}
-                        >
+                        <p className="truncate text-sm font-medium hover:underline">
                           {deal.firstName} {deal.lastName}
                         </p>
                         {deal.company && (
                           <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{deal.company.name}</p>
                         )}
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          {deal.estimatedValue != null && (
+                        {deal.estimatedValue != null && (
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
                             <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                               {formatCurrency(deal.estimatedValue)}
                             </Badge>
-                          )}
-                          {deal.status === "WON" && (
-                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                              Won
-                            </Badge>
-                          )}
-                          {deal.status === "LOST" && (
-                            <Badge className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Lost</Badge>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </Link>
                     </div>
                   </div>
