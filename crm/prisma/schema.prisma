@@ -71,7 +71,8 @@ model Contact {
   lostReason      String?
   closedAt        DateTime?
 
-  stageHistory StageHistoryEntry[]
+  stageHistory   StageHistoryEntry[]
+  journalEntries JournalEntry[]
 
   @@index([companyId])
   @@index([stage])
@@ -86,6 +87,18 @@ model StageHistoryEntry {
   fromStage DealStage?
   toStage   DealStage
   changedAt DateTime  @default(now())
+
+  @@index([contactId])
+}
+
+// Freeform touch-point log for a contact — calls, emails, meetings, etc.
+// Independent of stage changes; entries are created and deleted directly.
+model JournalEntry {
+  id        String   @id @default(cuid())
+  contactId String
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
 
   @@index([contactId])
 }
