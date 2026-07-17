@@ -38,7 +38,7 @@ export default async function AccountManagementPage({
     orderBy: { closedAt: "desc" },
   });
 
-  const totalValue = accounts.reduce((sum, a) => sum + (a.estimatedValue ?? 0), 0);
+  const totalJobsPerMonth = accounts.reduce((sum, a) => sum + (a.jobsPerMonth ?? 0), 0);
 
   return (
     <div>
@@ -49,7 +49,7 @@ export default async function AccountManagementPage({
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatTile label="Won accounts" value={accounts.length} />
-        <StatTile label="Total account value" value={formatCurrency(totalValue)} />
+        <StatTile label="Total jobs/mo" value={totalJobsPerMonth} />
       </div>
 
       <form className="mb-4">
@@ -82,7 +82,8 @@ export default async function AccountManagementPage({
                 <th className="px-4 py-3 font-medium">Account</th>
                 <th className="px-4 py-3 font-medium">Company</th>
                 <th className="px-4 py-3 font-medium">Contact info</th>
-                <th className="px-4 py-3 font-medium">Deal value</th>
+                <th className="px-4 py-3 font-medium">Jobs/mo</th>
+                <th className="px-4 py-3 font-medium">Price/HL-HG</th>
                 <th className="px-4 py-3 font-medium">Won</th>
                 <th className="px-4 py-3 font-medium">Next reminder</th>
               </tr>
@@ -121,7 +122,10 @@ export default async function AccountManagementPage({
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {account.estimatedValue != null ? formatCurrency(account.estimatedValue) : (
+                      {account.jobsPerMonth != null ? account.jobsPerMonth : <span className="text-zinc-400">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {account.pricePerHl != null ? formatCurrency(account.pricePerHl) : (
                         <span className="text-zinc-400">—</span>
                       )}
                     </td>

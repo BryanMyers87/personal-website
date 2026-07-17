@@ -97,10 +97,16 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           </dl>
 
           <div className="mt-5 grid grid-cols-2 gap-4">
-            {contact.estimatedValue != null && (
+            {contact.jobsPerMonth != null && (
               <div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Estimated value</p>
-                <p className="text-lg font-semibold">{formatCurrency(contact.estimatedValue)}</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Jobs per month</p>
+                <p className="text-lg font-semibold">{contact.jobsPerMonth}</p>
+              </div>
+            )}
+            {contact.pricePerHl != null && (
+              <div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Price per HL/HG</p>
+                <p className="text-lg font-semibold">{formatCurrency(contact.pricePerHl)}</p>
               </div>
             )}
             {contact.source && (

@@ -17,7 +17,8 @@ type ContactFormValues = {
   title?: string | null;
   companyId?: string | null;
   source?: string | null;
-  estimatedValue?: number | null;
+  jobsPerMonth?: number | null;
+  pricePerHl?: number | null;
   appointmentDate?: Date | string | null;
   notes?: string | null;
 };
@@ -77,13 +78,25 @@ export default function ContactForm({
         <Field label="Deal source" name="source" defaultValue={contact?.source ?? ""} placeholder="e.g. Referral, Website, Cold Outreach" />
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Estimated deal value ($)</label>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Jobs per month</label>
           <input
-            name="estimatedValue"
+            name="jobsPerMonth"
+            type="number"
+            min={0}
+            step="0.1"
+            defaultValue={contact?.jobsPerMonth ?? ""}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Price per HL/HG ($)</label>
+          <input
+            name="pricePerHl"
             type="number"
             min={0}
             step="0.01"
-            defaultValue={contact?.estimatedValue ?? ""}
+            defaultValue={contact?.pricePerHl ?? ""}
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </div>

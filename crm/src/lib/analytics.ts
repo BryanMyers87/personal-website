@@ -37,7 +37,7 @@ export async function getAnalytics() {
         stage: true,
         status: true,
         source: true,
-        estimatedValue: true,
+        jobsPerMonth: true,
         appointmentDate: true,
         createdAt: true,
         closedAt: true,
@@ -53,8 +53,8 @@ export async function getAnalytics() {
   const openDeals = deals.filter((d) => d.status === "OPEN");
   const wonDeals = deals.filter((d) => d.status === "WON");
   const lostDeals = deals.filter((d) => d.status === "LOST");
-  const openValue = openDeals.reduce((sum, d) => sum + (d.estimatedValue ?? 0), 0);
-  const wonValue = wonDeals.reduce((sum, d) => sum + (d.estimatedValue ?? 0), 0);
+  const openJobsPerMonth = openDeals.reduce((sum, d) => sum + (d.jobsPerMonth ?? 0), 0);
+  const wonJobsPerMonth = wonDeals.reduce((sum, d) => sum + (d.jobsPerMonth ?? 0), 0);
 
   const totals = {
     contacts: deals.length,
@@ -63,8 +63,8 @@ export async function getAnalytics() {
     open: openDeals.length,
     won: wonDeals.length,
     lost: lostDeals.length,
-    openValue,
-    wonValue,
+    openJobsPerMonth,
+    wonJobsPerMonth,
     winRate: wonDeals.length + lostDeals.length > 0 ? wonDeals.length / (wonDeals.length + lostDeals.length) : null,
   };
 

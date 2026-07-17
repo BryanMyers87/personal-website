@@ -33,7 +33,8 @@ export const contactSchema = z.object({
   title: optionalString,
   companyId: optionalId,
   source: optionalString,
-  estimatedValue: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
+  jobsPerMonth: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
+  pricePerHl: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
   appointmentDate: optionalString,
   notes: optionalString,
 });

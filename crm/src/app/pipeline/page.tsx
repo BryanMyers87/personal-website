@@ -18,7 +18,7 @@ export default async function PipelinePage() {
       firstName: true,
       lastName: true,
       stage: true,
-      estimatedValue: true,
+      jobsPerMonth: true,
       company: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },

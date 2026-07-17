@@ -11,10 +11,6 @@ import CloseHealthBar from "@/components/charts/CloseHealthBar";
 // from a build-time static snapshot.
 export const dynamic = "force-dynamic";
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
-}
-
 function formatPercent(value: number | null) {
   return value == null ? "—" : `${Math.round(value * 100)}%`;
 }
@@ -48,7 +44,7 @@ export default async function AnalyticsPage() {
         <StatTile
           label="Win rate"
           value={formatPercent(data.totals.winRate)}
-          sub={`${formatCurrency(data.totals.openValue)} open pipeline value`}
+          sub={`${data.totals.openJobsPerMonth} jobs/mo in open pipeline`}
           icon={<Handshake size={18} />}
         />
       </div>

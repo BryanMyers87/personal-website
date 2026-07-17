@@ -63,10 +63,11 @@ model Contact {
   companyId String?
   company   Company? @relation(fields: [companyId], references: [id])
 
-  stage          DealStage  @default(PROSPECT)
-  status         DealStatus @default(OPEN)
-  source         String?
-  estimatedValue Float?
+  stage        DealStage  @default(PROSPECT)
+  status       DealStatus @default(OPEN)
+  source       String?
+  jobsPerMonth Float?
+  pricePerHl   Float?
 
   // Business-meaning date (distinct from stage-history timestamps, so a
   // meeting can be scheduled ahead of the stage actually changing).

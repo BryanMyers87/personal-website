@@ -17,13 +17,9 @@ export type PipelineDeal = {
   firstName: string;
   lastName: string;
   stage: DealStage;
-  estimatedValue: number | null;
+  jobsPerMonth: number | null;
   company: { name: string } | null;
 };
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
-}
 
 export default function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -49,7 +45,7 @@ export default function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
     <div className="flex gap-4 overflow-x-auto pb-4">
       {columns.map(({ stage, deals: stageDeals }) => {
         const colors = STAGE_COLORS[stage];
-        const totalValue = stageDeals.reduce((sum, deal) => sum + (deal.estimatedValue ?? 0), 0);
+        const totalJobsPerMonth = stageDeals.reduce((sum, deal) => sum + (deal.jobsPerMonth ?? 0), 0);
 
         return (
           <div
@@ -80,8 +76,8 @@ export default function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
                   {stageDeals.length}
                 </Badge>
               </div>
-              {totalValue > 0 && (
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{formatCurrency(totalValue)}</p>
+              {totalJobsPerMonth > 0 && (
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{totalJobsPerMonth} jobs/mo</p>
               )}
             </div>
 
@@ -109,10 +105,10 @@ export default function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
                         {deal.company && (
                           <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{deal.company.name}</p>
                         )}
-                        {deal.estimatedValue != null && (
+                        {deal.jobsPerMonth != null && (
                           <div className="mt-2 flex flex-wrap items-center gap-1.5">
                             <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                              {formatCurrency(deal.estimatedValue)}
+                              {deal.jobsPerMonth} jobs/mo
                             </Badge>
                           </div>
                         )}

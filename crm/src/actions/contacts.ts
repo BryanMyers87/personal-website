@@ -18,7 +18,8 @@ function parse(formData: FormData) {
     title: formData.get("title") ?? "",
     companyId: formData.get("companyId") ?? "",
     source: formData.get("source") ?? "",
-    estimatedValue: formData.get("estimatedValue") ?? "",
+    jobsPerMonth: formData.get("jobsPerMonth") ?? "",
+    pricePerHl: formData.get("pricePerHl") ?? "",
     appointmentDate: formData.get("appointmentDate") ?? "",
     notes: formData.get("notes") ?? "",
   });
@@ -38,6 +39,10 @@ function toDateOrNull(value: string | undefined): Date | null {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function toNumberOrNull(value: string | number | undefined): number | null {
+  return value === "" || value === undefined ? null : Number(value);
 }
 
 function trimmedOrNull(value: FormDataEntryValue | null): string | null {
@@ -85,7 +90,8 @@ export async function createContact(_prevState: ActionState, formData: FormData)
       title: data.title,
       companyId,
       source: data.source,
-      estimatedValue: data.estimatedValue === "" || data.estimatedValue === undefined ? null : Number(data.estimatedValue),
+      jobsPerMonth: toNumberOrNull(data.jobsPerMonth),
+      pricePerHl: toNumberOrNull(data.pricePerHl),
       appointmentDate: toDateOrNull(data.appointmentDate),
       notes: data.notes,
       stageHistory: {
@@ -122,7 +128,8 @@ export async function updateContact(
       title: data.title,
       companyId,
       source: data.source,
-      estimatedValue: data.estimatedValue === "" || data.estimatedValue === undefined ? null : Number(data.estimatedValue),
+      jobsPerMonth: toNumberOrNull(data.jobsPerMonth),
+      pricePerHl: toNumberOrNull(data.pricePerHl),
       appointmentDate: toDateOrNull(data.appointmentDate),
       notes: data.notes,
     },
