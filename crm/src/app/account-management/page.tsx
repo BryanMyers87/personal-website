@@ -102,17 +102,8 @@ export default async function AccountManagementPage({
                       </Link>
                       {account.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{account.title}</p>}
                     </td>
-                    <td className="px-4 py-3">
-                      {account.company ? (
-                        <Link
-                          href={`/companies/${account.company.id}`}
-                          className="text-zinc-700 hover:underline dark:text-zinc-300"
-                        >
-                          {account.company.name}
-                        </Link>
-                      ) : (
-                        <span className="text-zinc-400">—</span>
-                      )}
+                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      {account.company ? account.company.name : <span className="text-zinc-400">—</span>}
                     </td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                       <div className="flex flex-col gap-0.5">

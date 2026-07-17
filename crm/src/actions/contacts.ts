@@ -40,6 +40,34 @@ function toDateOrNull(value: string | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+function trimmedOrNull(value: FormDataEntryValue | null): string | null {
+  const str = typeof value === "string" ? value.trim() : "";
+  return str.length > 0 ? str : null;
+}
+
+// There's no standalone company page anymore — a company is created inline
+// from the contact form (the "+ Create new company…" option) and this
+// resolves that into a companyId, falling back to whatever was picked (or
+// null) when no new company was submitted.
+async function resolveCompanyId(formData: FormData, fallbackCompanyId: string | null): Promise<string | null> {
+  const newCompanyName = trimmedOrNull(formData.get("newCompanyName"));
+  if (!newCompanyName) return fallbackCompanyId;
+
+  const company = await prisma.company.create({
+    data: {
+      name: newCompanyName,
+      industry: trimmedOrNull(formData.get("newCompanyIndustry")),
+      website: trimmedOrNull(formData.get("newCompanyWebsite")),
+      phone: trimmedOrNull(formData.get("newCompanyPhone")),
+      email: trimmedOrNull(formData.get("newCompanyEmail")),
+      address: trimmedOrNull(formData.get("newCompanyAddress")),
+      city: trimmedOrNull(formData.get("newCompanyCity")),
+      state: trimmedOrNull(formData.get("newCompanyState")),
+    },
+  });
+  return company.id;
+}
+
 export async function createContact(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const result = parse(formData);
   if (!result.success) {
@@ -47,6 +75,7 @@ export async function createContact(_prevState: ActionState, formData: FormData)
   }
 
   const data = result.data;
+  const companyId = await resolveCompanyId(formData, data.companyId ?? null);
   const contact = await prisma.contact.create({
     data: {
       firstName: data.firstName,
@@ -54,7 +83,7 @@ export async function createContact(_prevState: ActionState, formData: FormData)
       email: data.email,
       phone: data.phone,
       title: data.title,
-      companyId: data.companyId,
+      companyId,
       source: data.source,
       estimatedValue: data.estimatedValue === "" || data.estimatedValue === undefined ? null : Number(data.estimatedValue),
       appointmentDate: toDateOrNull(data.appointmentDate),
@@ -82,6 +111,7 @@ export async function updateContact(
   }
 
   const data = result.data;
+  const companyId = await resolveCompanyId(formData, data.companyId ?? null);
   await prisma.contact.update({
     where: { id },
     data: {
@@ -90,7 +120,7 @@ export async function updateContact(
       email: data.email,
       phone: data.phone,
       title: data.title,
-      companyId: data.companyId,
+      companyId,
       source: data.source,
       estimatedValue: data.estimatedValue === "" || data.estimatedValue === undefined ? null : Number(data.estimatedValue),
       appointmentDate: toDateOrNull(data.appointmentDate),

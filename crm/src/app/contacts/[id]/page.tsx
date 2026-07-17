@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format, formatDistanceStrict, formatDistanceToNow } from "date-fns";
-import { Building2, Calendar, Mail, Pencil, Phone } from "lucide-react";
+import { Building2, Calendar, Globe, Mail, MapPin, Pencil, Phone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { deleteContact } from "@/actions/contacts";
 import { Badge, ButtonLink, Card, PageHeader } from "@/components/ui";
@@ -33,6 +32,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
   const history = contact.stageHistory;
   const firstEntry = history[0];
   const cycleEnd = contact.status === "OPEN" ? new Date() : contact.closedAt ?? new Date();
+  const company = contact.company;
+  const companyLocation = company ? [company.city, company.state].filter(Boolean).join(", ") : "";
 
   return (
     <div>
@@ -62,12 +63,10 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
             Details
           </h2>
           <dl className="space-y-3 text-sm">
-            {contact.company && (
+            {company && (
               <div className="flex items-center gap-2">
                 <Building2 size={15} className="text-zinc-400" />
-                <Link href={`/companies/${contact.company.id}`} className="font-medium hover:underline">
-                  {contact.company.name}
-                </Link>
+                <span className="font-medium">{company.name}</span>
               </div>
             )}
             {contact.email && (
@@ -118,6 +117,50 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
                 Notes
               </h2>
               <p className="whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-400">{contact.notes}</p>
+            </>
+          )}
+
+          {company && (company.industry || company.website || company.phone || company.email || company.address || companyLocation || company.notes) && (
+            <>
+              <h2 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Company: {company.name}
+              </h2>
+              <dl className="space-y-2 text-sm">
+                {company.industry && <p className="text-zinc-600 dark:text-zinc-400">{company.industry}</p>}
+                {company.website && (
+                  <div className="flex items-center gap-2">
+                    <Globe size={14} className="text-zinc-400" />
+                    <a href={company.website} target="_blank" rel="noreferrer" className="hover:underline">
+                      {company.website}
+                    </a>
+                  </div>
+                )}
+                {company.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone size={14} className="text-zinc-400" />
+                    <a href={`tel:${company.phone}`} className="hover:underline">
+                      {company.phone}
+                    </a>
+                  </div>
+                )}
+                {company.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail size={14} className="text-zinc-400" />
+                    <a href={`mailto:${company.email}`} className="hover:underline">
+                      {company.email}
+                    </a>
+                  </div>
+                )}
+                {(company.address || companyLocation) && (
+                  <div className="flex items-center gap-2">
+                    <MapPin size={14} className="text-zinc-400" />
+                    <span>{[company.address, companyLocation].filter(Boolean).join(", ")}</span>
+                  </div>
+                )}
+                {company.notes && (
+                  <p className="whitespace-pre-wrap text-zinc-600 dark:text-zinc-400">{company.notes}</p>
+                )}
+              </dl>
             </>
           )}
 

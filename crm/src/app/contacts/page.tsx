@@ -90,14 +90,8 @@ export default async function ContactsPage({
                     </Link>
                     {contact.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{contact.title}</p>}
                   </td>
-                  <td className="px-4 py-3">
-                    {contact.company ? (
-                      <Link href={`/companies/${contact.company.id}`} className="text-zinc-700 hover:underline dark:text-zinc-300">
-                        {contact.company.name}
-                      </Link>
-                    ) : (
-                      <span className="text-zinc-400">—</span>
-                    )}
+                  <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                    {contact.company ? contact.company.name : <span className="text-zinc-400">—</span>}
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                     <div className="flex flex-col gap-0.5">

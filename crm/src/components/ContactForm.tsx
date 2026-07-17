@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState, useActionState } from "react";
 import type { ActionState } from "@/actions/contacts";
 import { Button } from "@/components/ui";
+
+const NEW_COMPANY = "__new__";
 
 type CompanyOption = { id: string; name: string };
 
@@ -32,6 +34,8 @@ export default function ContactForm({
   submitLabel: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const [companyChoice, setCompanyChoice] = useState(contact?.companyId ?? "");
+  const isNewCompany = companyChoice === NEW_COMPANY;
 
   const appointmentValue = contact?.appointmentDate
     ? new Date(contact.appointmentDate).toISOString().slice(0, 16)
@@ -55,8 +59,9 @@ export default function ContactForm({
         <div>
           <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Company</label>
           <select
-            name="companyId"
-            defaultValue={contact?.companyId ?? ""}
+            name={isNewCompany ? undefined : "companyId"}
+            value={companyChoice}
+            onChange={(e) => setCompanyChoice(e.target.value)}
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           >
             <option value="">No company</option>
@@ -65,6 +70,7 @@ export default function ContactForm({
                 {c.name}
               </option>
             ))}
+            <option value={NEW_COMPANY}>+ Create new company…</option>
           </select>
         </div>
 
@@ -92,6 +98,33 @@ export default function ContactForm({
           />
         </div>
       </div>
+
+      {isNewCompany && (
+        <div className="space-y-4 rounded-lg border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              New company
+            </p>
+            <button
+              type="button"
+              onClick={() => setCompanyChoice("")}
+              className="text-xs text-zinc-400 hover:underline"
+            >
+              Cancel
+            </button>
+          </div>
+          <Field label="Company name" name="newCompanyName" required />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Industry" name="newCompanyIndustry" />
+            <Field label="Website" name="newCompanyWebsite" />
+            <Field label="Phone" name="newCompanyPhone" />
+            <Field label="Email" name="newCompanyEmail" type="email" />
+            <Field label="Address" name="newCompanyAddress" />
+            <Field label="City" name="newCompanyCity" />
+            <Field label="State" name="newCompanyState" />
+          </div>
+        </div>
+      )}
 
       <div>
         <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Notes</label>
