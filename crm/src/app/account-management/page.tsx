@@ -39,6 +39,7 @@ export default async function AccountManagementPage({
   });
 
   const totalJobsPerMonth = accounts.reduce((sum, a) => sum + (a.jobsPerMonth ?? 0), 0);
+  const totalProjectedValue = accounts.reduce((sum, a) => sum + (a.jobsPerMonth ?? 0) * (a.pricePerHl ?? 0), 0);
 
   return (
     <div>
@@ -47,9 +48,14 @@ export default async function AccountManagementPage({
         description="Won accounts and the relationships you're maintaining with them."
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile label="Won accounts" value={accounts.length} />
         <StatTile label="Total jobs/mo" value={totalJobsPerMonth} />
+        <StatTile
+          label="Total value of jobs (projected)"
+          value={formatCurrency(totalProjectedValue)}
+          sub="Jobs/mo × price per HL/HG, summed"
+        />
       </div>
 
       <form className="mb-4">
@@ -84,6 +90,7 @@ export default async function AccountManagementPage({
                 <th className="px-4 py-3 font-medium">Contact info</th>
                 <th className="px-4 py-3 font-medium">Jobs/mo</th>
                 <th className="px-4 py-3 font-medium">Price/HL-HG</th>
+                <th className="px-4 py-3 font-medium">Projected value</th>
                 <th className="px-4 py-3 font-medium">Won</th>
                 <th className="px-4 py-3 font-medium">Next reminder</th>
               </tr>
@@ -92,6 +99,10 @@ export default async function AccountManagementPage({
               {accounts.map((account) => {
                 const nextReminder = account.reminders[0];
                 const overdue = nextReminder && isPast(nextReminder.dueAt);
+                const projectedValue =
+                  account.jobsPerMonth != null && account.pricePerHl != null
+                    ? account.jobsPerMonth * account.pricePerHl
+                    : null;
                 return (
                   <tr key={account.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                     <td className="px-4 py-3">
@@ -128,6 +139,9 @@ export default async function AccountManagementPage({
                       {account.pricePerHl != null ? formatCurrency(account.pricePerHl) : (
                         <span className="text-zinc-400">—</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {projectedValue != null ? formatCurrency(projectedValue) : <span className="text-zinc-400">—</span>}
                     </td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                       {account.closedAt ? formatDistanceToNow(account.closedAt, { addSuffix: true }) : "—"}
