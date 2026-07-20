@@ -8,6 +8,7 @@ import DeleteButton from "@/components/DeleteButton";
 import DealStageControl from "@/components/DealStageControl";
 import ContactJournal from "@/components/ContactJournal";
 import ReminderList from "@/components/ReminderList";
+import TouchPointChecklist from "@/components/TouchPointChecklist";
 import { STAGE_LABELS } from "@/lib/stages";
 
 function formatCurrency(value: number) {
@@ -55,6 +56,24 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
       <div className="mb-6">
         <DealStageControl contactId={contact.id} stage={contact.stage} status={contact.status} lostReason={contact.lostReason} />
+      </div>
+
+      <div className="mb-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          Touch Point Cadence
+        </h2>
+        <TouchPointChecklist
+          contactId={contact.id}
+          dates={{
+            touchCallTextAt: contact.touchCallTextAt,
+            touchEmailAt: contact.touchEmailAt,
+            touchLinkedinAt: contact.touchLinkedinAt,
+            touchDropInAt: contact.touchDropInAt,
+            touchCallAt: contact.touchCallAt,
+            touchTextAt: contact.touchTextAt,
+            touchBreakupAt: contact.touchBreakupAt,
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

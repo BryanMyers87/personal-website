@@ -75,6 +75,17 @@ model Contact {
   lostReason      String?
   closedAt        DateTime?
 
+  // Fixed outreach cadence checklist (see src/lib/touchPoints.ts for the
+  // day/label copy). Each is null until checked, then holds the date it
+  // was logged done.
+  touchCallTextAt DateTime?
+  touchEmailAt    DateTime?
+  touchLinkedinAt DateTime?
+  touchDropInAt   DateTime?
+  touchCallAt     DateTime?
+  touchTextAt     DateTime?
+  touchBreakupAt  DateTime?
+
   stageHistory   StageHistoryEntry[]
   journalEntries JournalEntry[]
   reminders      Reminder[]
