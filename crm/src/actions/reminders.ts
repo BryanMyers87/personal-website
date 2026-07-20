@@ -11,6 +11,7 @@ export async function createReminder(contactId: string, note: string, dueAt: str
 
   await prisma.reminder.create({ data: { contactId, note: trimmed, dueAt: due } });
   revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/reminders");
 }
 
 export async function toggleReminder(id: string, contactId: string, completed: boolean): Promise<void> {
@@ -19,9 +20,11 @@ export async function toggleReminder(id: string, contactId: string, completed: b
     data: { completedAt: completed ? new Date() : null },
   });
   revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/reminders");
 }
 
 export async function deleteReminder(id: string, contactId: string): Promise<void> {
   await prisma.reminder.delete({ where: { id } });
   revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/reminders");
 }
