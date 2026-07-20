@@ -134,3 +134,15 @@ model JournalEntry {
 
   @@index([contactId])
 }
+
+// Single-row store for the app's one Google Calendar connection (this is a
+// single-user internal tool, not per-account). Holds the OAuth refresh token
+// used to create touch-point reminder events; a fresh access token is
+// requested from it on every calendar call rather than caching one here.
+model GoogleCalendarConnection {
+  id           String   @id
+  refreshToken String
+  email        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
