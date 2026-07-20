@@ -58,24 +58,26 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         <DealStageControl contactId={contact.id} stage={contact.stage} status={contact.status} lostReason={contact.lostReason} />
       </div>
 
-      <div className="mb-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          Touch Point Cadence
-        </h2>
-        <TouchPointChecklist
-          contactId={contact.id}
-          contactName={`${contact.firstName} ${contact.lastName}`}
-          dates={{
-            touchCallTextAt: contact.touchCallTextAt,
-            touchEmailAt: contact.touchEmailAt,
-            touchLinkedinAt: contact.touchLinkedinAt,
-            touchDropInAt: contact.touchDropInAt,
-            touchCallAt: contact.touchCallAt,
-            touchTextAt: contact.touchTextAt,
-            touchBreakupAt: contact.touchBreakupAt,
-          }}
-        />
-      </div>
+      {contact.stage !== "RELATIONSHIP_MANAGEMENT" && (
+        <div className="mb-6">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Touch Point Cadence
+          </h2>
+          <TouchPointChecklist
+            contactId={contact.id}
+            contactName={`${contact.firstName} ${contact.lastName}`}
+            dates={{
+              touchCallTextAt: contact.touchCallTextAt,
+              touchEmailAt: contact.touchEmailAt,
+              touchLinkedinAt: contact.touchLinkedinAt,
+              touchDropInAt: contact.touchDropInAt,
+              touchCallAt: contact.touchCallAt,
+              touchTextAt: contact.touchTextAt,
+              touchBreakupAt: contact.touchBreakupAt,
+            }}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-1">
