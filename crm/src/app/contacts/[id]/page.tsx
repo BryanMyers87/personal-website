@@ -9,6 +9,7 @@ import DealStageControl from "@/components/DealStageControl";
 import ContactJournal from "@/components/ContactJournal";
 import ReminderList from "@/components/ReminderList";
 import TouchPointChecklist from "@/components/TouchPointChecklist";
+import OnboardingFileList from "@/components/OnboardingFileList";
 import { STAGE_LABELS } from "@/lib/stages";
 
 function formatCurrency(value: number) {
@@ -25,6 +26,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
       stageHistory: { orderBy: { changedAt: "asc" } },
       journalEntries: { orderBy: { createdAt: "desc" } },
       reminders: { orderBy: { dueAt: "asc" } },
+      onboardingFiles: { orderBy: { position: "asc" } },
     },
   });
 
@@ -35,6 +37,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
   const cycleEnd = contact.status === "OPEN" ? new Date() : contact.closedAt ?? new Date();
   const company = contact.company;
   const companyLocation = company ? [company.city, company.state].filter(Boolean).join(", ") : "";
+  const showOnboardingFiles = contact.stage === "NEGOTIATION" || contact.stage === "RELATIONSHIP_MANAGEMENT";
 
   return (
     <div>
@@ -76,6 +79,15 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               touchBreakupAt: contact.touchBreakupAt,
             }}
           />
+        </div>
+      )}
+
+      {showOnboardingFiles && (
+        <div className="mb-6">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            First Files
+          </h2>
+          <OnboardingFileList contactId={contact.id} files={contact.onboardingFiles} />
         </div>
       )}
 
