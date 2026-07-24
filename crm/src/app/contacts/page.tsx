@@ -5,6 +5,7 @@ import { Card, EmptyState, PageHeader, ButtonLink, Badge } from "@/components/ui
 import { STAGE_COLORS, STAGE_LABELS } from "@/lib/stages";
 import { parseContactSort } from "@/lib/contactSort";
 import ContactSortSelect from "@/components/ContactSortSelect";
+import ScheduleFirstTouchButton from "@/components/ScheduleFirstTouchButton";
 
 export default async function ContactsPage({
   searchParams,
@@ -95,6 +96,7 @@ export default async function ContactsPage({
                 <th className="px-4 py-3 font-medium">Company</th>
                 <th className="px-4 py-3 font-medium">Contact info</th>
                 <th className="px-4 py-3 font-medium">Stage</th>
+                <th className="px-4 py-3 font-medium">First Touch</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -138,6 +140,19 @@ export default async function ContactsPage({
                         <Badge className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">Lost</Badge>
                       )}
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {!contact.touchCallTextAt && contact.stage !== "RELATIONSHIP_MANAGEMENT" ? (
+                      <ScheduleFirstTouchButton
+                        contactId={contact.id}
+                        contactName={`${contact.firstName} ${contact.lastName}`}
+                        phone={contact.phone}
+                        email={contact.email}
+                        scheduledAt={contact.firstTouchScheduledAt}
+                      />
+                    ) : (
+                      <span className="text-zinc-400">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
