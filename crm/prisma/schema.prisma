@@ -86,6 +86,12 @@ model Contact {
   touchTextAt     DateTime?
   touchBreakupAt  DateTime?
 
+  // Set when "Schedule First Touch Call" books a Mon/Fri 9:30-10:30 slot for
+  // the still-unchecked Call+Text touch point. Purely a local booking record
+  // (this app has no read access to any real calendar) — used to keep two
+  // contacts from landing in the same 5-minute slot.
+  firstTouchScheduledAt DateTime?
+
   stageHistory    StageHistoryEntry[]
   journalEntries  JournalEntry[]
   reminders       Reminder[]

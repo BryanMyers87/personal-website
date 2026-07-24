@@ -8,6 +8,7 @@ import { setTouchPoint } from "@/actions/touchPoints";
 import { TOUCH_POINTS, getNextTouchPoint, type TouchPointDates } from "@/lib/touchPoints";
 import { buildGoogleCalendarLink } from "@/lib/googleCalendarLink";
 import { Card } from "@/components/ui";
+import ScheduleFirstTouchButton from "@/components/ScheduleFirstTouchButton";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
@@ -15,10 +16,16 @@ const FIVE_MINUTES_MS = 5 * 60 * 1000;
 export default function TouchPointChecklist({
   contactId,
   contactName,
+  phone,
+  email,
+  firstTouchScheduledAt,
   dates,
 }: {
   contactId: string;
   contactName: string;
+  phone: string | null;
+  email: string | null;
+  firstTouchScheduledAt: Date | string | null;
   dates: TouchPointDates;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -44,8 +51,10 @@ export default function TouchPointChecklist({
               }
             : null;
 
+        const isFirstTouchPoint = tp.key === TOUCH_POINTS[0].key;
+
         return (
-          <div key={tp.key} className="flex items-start gap-3 px-4 py-3">
+          <div key={tp.key} className="flex flex-wrap items-start gap-3 px-4 py-3">
             <label className="flex flex-1 cursor-pointer items-start gap-3">
               <input
                 type="checkbox"
@@ -71,6 +80,17 @@ export default function TouchPointChecklist({
                 <CalendarPlus size={13} />
                 Add {nextReminder.label} to Calendar
               </a>
+            )}
+            {isFirstTouchPoint && !done && (
+              <div className="w-full sm:w-auto">
+                <ScheduleFirstTouchButton
+                  contactId={contactId}
+                  contactName={contactName}
+                  phone={phone}
+                  email={email}
+                  scheduledAt={firstTouchScheduledAt}
+                />
+              </div>
             )}
           </div>
         );

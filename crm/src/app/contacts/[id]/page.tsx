@@ -69,6 +69,9 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <TouchPointChecklist
             contactId={contact.id}
             contactName={`${contact.firstName} ${contact.lastName}`}
+            phone={contact.phone}
+            email={contact.email}
+            firstTouchScheduledAt={contact.firstTouchScheduledAt}
             dates={{
               touchCallTextAt: contact.touchCallTextAt,
               touchEmailAt: contact.touchEmailAt,
