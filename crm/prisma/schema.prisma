@@ -44,7 +44,8 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contacts Contact[]
+  contacts     Contact[]
+  hitListEntry HitListEntry?
 }
 
 // A contact IS the deal: every contact carries its own pipeline stage,
@@ -140,6 +141,31 @@ model JournalEntry {
   createdAt DateTime @default(now())
 
   @@index([contactId])
+}
+
+// A prospect list imported wholesale (not fed into the pipeline as
+// contacts/deals) — company-level info only, for scanning through and
+// logging a basic "I've reached out" touchpoint. Converting one creates a
+// Company and hands off to the New Contact form to attach the actual
+// person; the entry itself never becomes a Contact.
+model HitListEntry {
+  id          String    @id @default(cuid())
+  companyName String
+  website     String?
+  phone       String?
+  email       String?
+  city        String?
+  services    String?
+  contactedAt DateTime?
+
+  convertedCompanyId String?   @unique
+  convertedCompany   Company?  @relation(fields: [convertedCompanyId], references: [id], onDelete: SetNull)
+  convertedAt        DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([companyName])
+  @@index([contactedAt])
 }
 
 // Up to 5 tracked links per contact ("first 5 files") for shepherding a new

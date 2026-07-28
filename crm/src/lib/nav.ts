@@ -1,4 +1,4 @@
-import { Archive, BarChart3, BellRing, Folder, KanbanSquare, UserCheck, Users } from "lucide-react";
+import { Archive, BarChart3, BellRing, Folder, KanbanSquare, Target, UserCheck, Users } from "lucide-react";
 
 export const NAV_ITEMS = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
@@ -7,5 +7,6 @@ export const NAV_ITEMS = [
   { href: "/account-management", label: "Account Management", icon: UserCheck },
   { href: "/holding-tank", label: "Holding Tank", icon: Archive },
   { href: "/file-tracker", label: "File Tracker", icon: Folder },
+  { href: "/hit-list", label: "Hit List", icon: Target },
   { href: "/contacts", label: "Contacts", icon: Users },
 ];
