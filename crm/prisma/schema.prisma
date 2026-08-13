@@ -190,6 +190,19 @@ model HitListEntry {
   @@index([contactedAt])
 }
 
+// Freeform to-do list for tracking upcoming projects and check-ins,
+// independent of any contact — surfaced on the This Week dashboard.
+model TodoItem {
+  id          String    @id @default(cuid())
+  text        String
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([completedAt])
+  @@index([dueAt])
+}
+
 // Up to 5 tracked links per contact ("first 5 files") for shepherding a new
 // client's earliest jobs — surfaced on the contact page once the deal
 // reaches Negotiation, and gathered account-wide in the File Tracker tab,
