@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { contactSchema } from "@/lib/validation";
 import { DealStage, DealStatus } from "@/generated/prisma/enums";
 import { STAGE_ORDER } from "@/lib/stages";
+import { ensureNextReminder } from "@/lib/nextReminder";
 
 export type ActionState = { error?: string; fieldErrors?: Record<string, string> } | undefined;
 
@@ -100,9 +101,12 @@ export async function createContact(_prevState: ActionState, formData: FormData)
     },
   });
 
+  await ensureNextReminder(contact.id, `${contact.firstName} ${contact.lastName}`);
+
   revalidatePath("/contacts");
   revalidatePath("/pipeline");
   revalidatePath("/analytics");
+  revalidatePath("/reminders");
   redirect(`/contacts/${contact.id}`);
 }
 
@@ -153,7 +157,10 @@ export async function deleteContact(id: string): Promise<void> {
 export async function moveDealStage(contactId: string, toStage: DealStage): Promise<void> {
   if (!STAGE_ORDER.includes(toStage)) return;
 
-  const contact = await prisma.contact.findUnique({ where: { id: contactId }, select: { stage: true } });
+  const contact = await prisma.contact.findUnique({
+    where: { id: contactId },
+    select: { stage: true, firstName: true, lastName: true },
+  });
   if (!contact || contact.stage === toStage) return;
 
   await prisma.$transaction([
@@ -166,14 +173,20 @@ export async function moveDealStage(contactId: string, toStage: DealStage): Prom
     }),
   ]);
 
+  await ensureNextReminder(contactId, `${contact.firstName} ${contact.lastName}`);
+
   revalidatePath("/pipeline");
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");
   revalidatePath("/analytics");
+  revalidatePath("/reminders");
 }
 
 export async function markDealWon(contactId: string): Promise<void> {
-  const contact = await prisma.contact.findUnique({ where: { id: contactId }, select: { stage: true } });
+  const contact = await prisma.contact.findUnique({
+    where: { id: contactId },
+    select: { stage: true, firstName: true, lastName: true },
+  });
   if (!contact) return;
 
   const alreadyInRelationshipManagement = contact.stage === DealStage.RELATIONSHIP_MANAGEMENT;
@@ -197,10 +210,13 @@ export async function markDealWon(contactId: string): Promise<void> {
         ]),
   ]);
 
+  await ensureNextReminder(contactId, `${contact.firstName} ${contact.lastName}`);
+
   revalidatePath("/pipeline");
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");
   revalidatePath("/analytics");
+  revalidatePath("/reminders");
 }
 
 export async function markDealLost(contactId: string, reason: string): Promise<void> {
@@ -215,7 +231,10 @@ export async function markDealLost(contactId: string, reason: string): Promise<v
 }
 
 export async function reopenDeal(contactId: string): Promise<void> {
-  const contact = await prisma.contact.findUnique({ where: { id: contactId }, select: { stage: true } });
+  const contact = await prisma.contact.findUnique({
+    where: { id: contactId },
+    select: { stage: true, firstName: true, lastName: true },
+  });
   if (!contact) return;
 
   // A deal reopened from relationship management drops back into the
@@ -236,8 +255,11 @@ export async function reopenDeal(contactId: string): Promise<void> {
         ]),
   ]);
 
+  await ensureNextReminder(contactId, `${contact.firstName} ${contact.lastName}`);
+
   revalidatePath("/pipeline");
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");
   revalidatePath("/analytics");
+  revalidatePath("/reminders");
 }
