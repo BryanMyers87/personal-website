@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { format, formatDistanceStrict, formatDistanceToNow } from "date-fns";
+import { clsx } from "clsx";
 import { Building2, Calendar, Globe, Mail, MapPin, Pencil, Phone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { deleteContact } from "@/actions/contacts";
@@ -12,6 +13,7 @@ import TouchPointChecklist from "@/components/TouchPointChecklist";
 import OnboardingFileList from "@/components/OnboardingFileList";
 import HealthTierSelect from "@/components/HealthTierSelect";
 import { STAGE_LABELS } from "@/lib/stages";
+import { volumeTierInfo } from "@/lib/volumeTier";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
@@ -142,6 +144,13 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               <div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">Jobs per month</p>
                 <p className="text-lg font-semibold">{contact.jobsPerMonth}</p>
+                {contact.stage === "RELATIONSHIP_MANAGEMENT" &&
+                  (() => {
+                    const info = volumeTierInfo(contact.jobsPerMonth);
+                    return info ? (
+                      <Badge className={clsx("mt-1", info.badge)}>{info.label}</Badge>
+                    ) : null;
+                  })()}
               </div>
             )}
             {contact.pricePerHl != null && (

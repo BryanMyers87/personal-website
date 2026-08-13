@@ -3,9 +3,10 @@ import { Mail, Phone, Search } from "lucide-react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { clsx } from "clsx";
 import { prisma } from "@/lib/prisma";
-import { Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
+import { Badge, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
 import HealthTierSelect from "@/components/HealthTierSelect";
 import { HEALTH_TIERS, type HealthTierValue } from "@/lib/accountHealth";
+import { VOLUME_TIERS, volumeTierInfo } from "@/lib/volumeTier";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
@@ -19,15 +20,34 @@ const HEALTH_FILTERS = [
 
 type HealthFilter = (typeof HEALTH_FILTERS)[number]["value"];
 
+const VOLUME_FILTERS = [
+  { value: "all", label: "All" },
+  ...VOLUME_TIERS.map((t) => ({ value: String(t.tier), label: `${t.label} (${t.sub})` })),
+  { value: "unassigned", label: "Unassigned" },
+] as const;
+
+type VolumeFilter = (typeof VOLUME_FILTERS)[number]["value"];
+
+function volumeWhere(volume: VolumeFilter) {
+  if (volume === "unassigned") return { jobsPerMonth: null };
+  if (volume === "1") return { jobsPerMonth: { gte: 11 } };
+  if (volume === "2") return { jobsPerMonth: { gte: 5, lte: 10 } };
+  if (volume === "3") return { jobsPerMonth: { lte: 4 } };
+  return {};
+}
+
 export default async function AccountManagementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; health?: string }>;
+  searchParams: Promise<{ q?: string; health?: string; volume?: string }>;
 }) {
-  const { q, health: healthParam } = await searchParams;
+  const { q, health: healthParam, volume: volumeParam } = await searchParams;
   const query = q?.trim() ?? "";
   const health: HealthFilter = HEALTH_FILTERS.some((f) => f.value === healthParam)
     ? (healthParam as HealthFilter)
+    : "all";
+  const volume: VolumeFilter = VOLUME_FILTERS.some((f) => f.value === volumeParam)
+    ? (volumeParam as VolumeFilter)
     : "all";
 
   const accounts = await prisma.contact.findMany({
@@ -45,6 +65,7 @@ export default async function AccountManagementPage({
         : {}),
       ...(health === "unassigned" ? { healthTier: null } : {}),
       ...(health !== "all" && health !== "unassigned" ? { healthTier: health as HealthTierValue } : {}),
+      ...volumeWhere(volume),
     },
     include: {
       company: true,
@@ -87,11 +108,16 @@ export default async function AccountManagementPage({
           />
         </div>
         <input type="hidden" name="health" value={health} />
-        <div className="flex flex-wrap gap-1.5">
+        <input type="hidden" name="volume" value={volume} />
+      </form>
+
+      <div className="mb-4 space-y-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-medium text-zinc-400">Health:</span>
           {HEALTH_FILTERS.map((filter) => (
             <Link
               key={filter.value}
-              href={`/account-management?${new URLSearchParams({ ...(query ? { q: query } : {}), health: filter.value }).toString()}`}
+              href={`/account-management?${new URLSearchParams({ ...(query ? { q: query } : {}), health: filter.value, volume }).toString()}`}
               className={clsx(
                 "rounded-lg px-2.5 py-1.5 text-xs font-medium",
                 health === filter.value
@@ -103,7 +129,24 @@ export default async function AccountManagementPage({
             </Link>
           ))}
         </div>
-      </form>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-medium text-zinc-400">Volume:</span>
+          {VOLUME_FILTERS.map((filter) => (
+            <Link
+              key={filter.value}
+              href={`/account-management?${new URLSearchParams({ ...(query ? { q: query } : {}), health, volume: filter.value }).toString()}`}
+              className={clsx(
+                "rounded-lg px-2.5 py-1.5 text-xs font-medium",
+                volume === filter.value
+                  ? "bg-indigo-600 text-white"
+                  : "border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800",
+              )}
+            >
+              {filter.label}
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {accounts.length === 0 ? (
         <EmptyState
@@ -124,6 +167,7 @@ export default async function AccountManagementPage({
                 <th className="px-4 py-3 font-medium">Company</th>
                 <th className="px-4 py-3 font-medium">Contact info</th>
                 <th className="px-4 py-3 font-medium">Jobs/mo</th>
+                <th className="px-4 py-3 font-medium">Volume</th>
                 <th className="px-4 py-3 font-medium">Price/HL-HG</th>
                 <th className="px-4 py-3 font-medium">Projected value</th>
                 <th className="px-4 py-3 font-medium">Won</th>
@@ -172,6 +216,16 @@ export default async function AccountManagementPage({
                     </td>
                     <td className="px-4 py-3">
                       {account.jobsPerMonth != null ? account.jobsPerMonth : <span className="text-zinc-400">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const info = volumeTierInfo(account.jobsPerMonth);
+                        return info ? (
+                          <Badge className={info.badge}>{info.label}</Badge>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       {account.pricePerHl != null ? formatCurrency(account.pricePerHl) : (
