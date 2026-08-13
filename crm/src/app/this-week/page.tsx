@@ -33,7 +33,7 @@ export default async function ThisWeekPage() {
       include: { company: true },
     }),
     prisma.hitListEntry.findMany({
-      where: { outreachStatus: "ATTEMPTED", convertedCompanyId: null },
+      where: { outreachStatus: "ATTEMPTED" },
       orderBy: { contactedAt: "asc" },
       take: 10,
     }),

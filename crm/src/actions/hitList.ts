@@ -16,12 +16,12 @@ export async function setHitListOutreachStatus(id: string, status: OutreachStatu
   revalidatePath("/hit-list");
 }
 
-// Creates (or reuses) the Company, links the entry to it, then hands off to
-// the New Contact form — the entry itself never becomes a Contact, since a
-// person still needs to be attached by hand.
+// Creates (or reuses) the Company, deletes the entry — it's moved into the
+// pipeline now, so it has no reason to keep showing up in the Hit List —
+// then hands off to the New Contact form to attach the actual person.
 export async function addHitListEntryToPipeline(id: string): Promise<void> {
   const entry = await prisma.hitListEntry.findUnique({ where: { id } });
-  if (!entry || entry.convertedCompanyId) return;
+  if (!entry) return;
 
   let company = await prisma.company.findFirst({
     where: { name: { equals: entry.companyName, mode: "insensitive" } },
@@ -39,10 +39,7 @@ export async function addHitListEntryToPipeline(id: string): Promise<void> {
     });
   }
 
-  await prisma.hitListEntry.update({
-    where: { id },
-    data: { convertedCompanyId: company.id, convertedAt: new Date() },
-  });
+  await prisma.hitListEntry.delete({ where: { id } });
 
   revalidatePath("/hit-list");
   redirect(`/contacts/new?companyId=${company.id}`);

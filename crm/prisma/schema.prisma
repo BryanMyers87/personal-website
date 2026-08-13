@@ -60,8 +60,7 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contacts     Contact[]
-  hitListEntry HitListEntry?
+  contacts Contact[]
 }
 
 // A contact IS the deal: every contact carries its own pipeline stage,
@@ -171,22 +170,19 @@ enum JournalEntryKind {
 // A prospect list imported wholesale (not fed into the pipeline as
 // contacts/deals) — company-level info only, for scanning through and
 // logging a basic "I've reached out" touchpoint. Converting one creates a
-// Company and hands off to the New Contact form to attach the actual
-// person; the entry itself never becomes a Contact.
+// Company, hands off to the New Contact form to attach the actual person,
+// and deletes the entry — once it's in the pipeline it has no reason to
+// linger here too.
 model HitListEntry {
-  id          String    @id @default(cuid())
-  companyName String
-  website     String?
-  phone       String?
-  email       String?
-  city        String?
-  services    String?
+  id             String                @id @default(cuid())
+  companyName    String
+  website        String?
+  phone          String?
+  email          String?
+  city           String?
+  services       String?
   outreachStatus HitListOutreachStatus @default(NOT_CONTACTED)
-  contactedAt DateTime?
-
-  convertedCompanyId String?   @unique
-  convertedCompany   Company?  @relation(fields: [convertedCompanyId], references: [id], onDelete: SetNull)
-  convertedAt        DateTime?
+  contactedAt    DateTime?
 
   createdAt DateTime @default(now())
 

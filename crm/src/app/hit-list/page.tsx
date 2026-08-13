@@ -3,7 +3,7 @@ import { Mail, Phone, Search, ArrowRight, ChevronUp, ChevronDown, ChevronsUpDown
 import { clsx } from "clsx";
 import { prisma } from "@/lib/prisma";
 import { addHitListEntryToPipeline } from "@/actions/hitList";
-import { Badge, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
+import { Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
 import HitListStatusSelect from "@/components/HitListStatusSelect";
 import { OUTREACH_STATUSES, type OutreachStatusValue } from "@/lib/hitListStatus";
 
@@ -12,7 +12,6 @@ export const dynamic = "force-dynamic";
 const STATUS_FILTERS = [
   { value: "all", label: "All" },
   ...OUTREACH_STATUSES.map((s) => ({ value: s.value as string, label: s.label })),
-  { value: "in-pipeline", label: "In Pipeline" },
 ] as const;
 
 type StatusFilter = (typeof STATUS_FILTERS)[number]["value"];
@@ -49,11 +48,11 @@ export default async function HitListPage({
           ? { contactedAt: dir }
           : { companyName: dir };
 
-  const [totalCount, notContactedCount, respondedCount, convertedCount, entries] = await Promise.all([
+  const [totalCount, notContactedCount, attemptedCount, respondedCount, entries] = await Promise.all([
     prisma.hitListEntry.count(),
     prisma.hitListEntry.count({ where: { outreachStatus: "NOT_CONTACTED" } }),
+    prisma.hitListEntry.count({ where: { outreachStatus: "ATTEMPTED" } }),
     prisma.hitListEntry.count({ where: { outreachStatus: "RESPONDED" } }),
-    prisma.hitListEntry.count({ where: { convertedCompanyId: { not: null } } }),
     prisma.hitListEntry.findMany({
       where: {
         ...(query
@@ -64,8 +63,7 @@ export default async function HitListPage({
               ],
             }
           : {}),
-        ...(status === "in-pipeline" ? { convertedCompanyId: { not: null } } : {}),
-        ...(status !== "all" && status !== "in-pipeline" ? { outreachStatus: status as OutreachStatusValue } : {}),
+        ...(status !== "all" ? { outreachStatus: status as OutreachStatusValue } : {}),
       },
       orderBy,
     }),
@@ -106,14 +104,14 @@ export default async function HitListPage({
     <div>
       <PageHeader
         title="Hit List"
-        description="Contractors you're working to connect with — log a basic touchpoint here, and add to the pipeline only when you're ready to attach a contact."
+        description="Contractors you're working to connect with — log a basic touchpoint here. Moving one into the pipeline removes it from this list."
       />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Total" value={totalCount} />
         <StatTile label="Not Contacted" value={notContactedCount} />
+        <StatTile label="Attempted" value={attemptedCount} />
         <StatTile label="Responded" value={respondedCount} />
-        <StatTile label="In Pipeline" value={convertedCount} />
       </div>
 
       <form className="mb-4 flex flex-wrap items-center gap-3">
@@ -204,23 +202,15 @@ export default async function HitListPage({
                     {entry.services ?? <span className="text-zinc-400">—</span>}
                   </td>
                   <td className="px-4 py-3">
-                    {entry.convertedCompanyId ? (
-                      <Link href={`/contacts?q=${encodeURIComponent(entry.companyName)}`}>
-                        <Badge className="bg-emerald-100 text-emerald-700 hover:underline dark:bg-emerald-950 dark:text-emerald-300">
-                          In Pipeline
-                        </Badge>
-                      </Link>
-                    ) : (
-                      <form action={addHitListEntryToPipeline.bind(null, entry.id)}>
-                        <button
-                          type="submit"
-                          className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                        >
-                          Add to Pipeline
-                          <ArrowRight size={12} />
-                        </button>
-                      </form>
-                    )}
+                    <form action={addHitListEntryToPipeline.bind(null, entry.id)}>
+                      <button
+                        type="submit"
+                        className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      >
+                        Add to Pipeline
+                        <ArrowRight size={12} />
+                      </button>
+                    </form>
                   </td>
                 </tr>
               ))}
