@@ -4,14 +4,14 @@ import { clsx } from "clsx";
 import { prisma } from "@/lib/prisma";
 import { addHitListEntryToPipeline } from "@/actions/hitList";
 import { Badge, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
-import HitListContactedToggle from "@/components/HitListContactedToggle";
+import HitListStatusSelect from "@/components/HitListStatusSelect";
+import { OUTREACH_STATUSES, type OutreachStatusValue } from "@/lib/hitListStatus";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All" },
-  { value: "not-contacted", label: "Not Contacted" },
-  { value: "contacted", label: "Contacted" },
+  ...OUTREACH_STATUSES.map((s) => ({ value: s.value as string, label: s.label })),
   { value: "in-pipeline", label: "In Pipeline" },
 ] as const;
 
@@ -21,7 +21,7 @@ const SORT_FIELDS = [
   { value: "company", label: "Company" },
   { value: "city", label: "City" },
   { value: "phone", label: "Contact info" },
-  { value: "contacted", label: "Contacted" },
+  { value: "contacted", label: "Status" },
 ] as const;
 
 type SortField = (typeof SORT_FIELDS)[number]["value"];
@@ -49,9 +49,10 @@ export default async function HitListPage({
           ? { contactedAt: dir }
           : { companyName: dir };
 
-  const [totalCount, contactedCount, convertedCount, entries] = await Promise.all([
+  const [totalCount, notContactedCount, respondedCount, convertedCount, entries] = await Promise.all([
     prisma.hitListEntry.count(),
-    prisma.hitListEntry.count({ where: { contactedAt: { not: null } } }),
+    prisma.hitListEntry.count({ where: { outreachStatus: "NOT_CONTACTED" } }),
+    prisma.hitListEntry.count({ where: { outreachStatus: "RESPONDED" } }),
     prisma.hitListEntry.count({ where: { convertedCompanyId: { not: null } } }),
     prisma.hitListEntry.findMany({
       where: {
@@ -63,9 +64,8 @@ export default async function HitListPage({
               ],
             }
           : {}),
-        ...(status === "contacted" ? { contactedAt: { not: null } } : {}),
-        ...(status === "not-contacted" ? { contactedAt: null } : {}),
         ...(status === "in-pipeline" ? { convertedCompanyId: { not: null } } : {}),
+        ...(status !== "all" && status !== "in-pipeline" ? { outreachStatus: status as OutreachStatusValue } : {}),
       },
       orderBy,
     }),
@@ -111,9 +111,9 @@ export default async function HitListPage({
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Total" value={totalCount} />
-        <StatTile label="Contacted" value={contactedCount} />
+        <StatTile label="Not Contacted" value={notContactedCount} />
+        <StatTile label="Responded" value={respondedCount} />
         <StatTile label="In Pipeline" value={convertedCount} />
-        <StatTile label="Remaining" value={totalCount - contactedCount} />
       </div>
 
       <form className="mb-4 flex flex-wrap items-center gap-3">
@@ -158,7 +158,7 @@ export default async function HitListPage({
           <table className="w-full text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
               <tr>
-                {sortableHeader("contacted", "Contacted")}
+                {sortableHeader("contacted", "Status")}
                 {sortableHeader("company", "Company")}
                 {sortableHeader("city", "City")}
                 {sortableHeader("phone", "Contact info")}
@@ -170,7 +170,7 @@ export default async function HitListPage({
               {entries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                   <td className="px-4 py-3">
-                    <HitListContactedToggle id={entry.id} contacted={!!entry.contactedAt} />
+                    <HitListStatusSelect id={entry.id} status={entry.outreachStatus} />
                   </td>
                   <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
                     {entry.companyName}

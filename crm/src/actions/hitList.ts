@@ -3,11 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import type { OutreachStatusValue } from "@/lib/hitListStatus";
 
-export async function toggleHitListContacted(id: string, contacted: boolean): Promise<void> {
+export async function setHitListOutreachStatus(id: string, status: OutreachStatusValue): Promise<void> {
   await prisma.hitListEntry.update({
     where: { id },
-    data: { contactedAt: contacted ? new Date() : null },
+    data: {
+      outreachStatus: status,
+      contactedAt: status === "NOT_CONTACTED" ? null : new Date(),
+    },
   });
   revalidatePath("/hit-list");
 }

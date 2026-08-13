@@ -30,6 +30,14 @@ enum DealStatus {
   LOST
 }
 
+// Quick outreach status for a Hit List entry.
+enum HitListOutreachStatus {
+  NOT_CONTACTED
+  ATTEMPTED
+  RESPONDED
+  NOT_INTERESTED
+}
+
 // Manually-assigned relationship health for a won account. Null means no
 // tier has been set yet.
 enum AccountHealth {
@@ -167,6 +175,7 @@ model HitListEntry {
   email       String?
   city        String?
   services    String?
+  outreachStatus HitListOutreachStatus @default(NOT_CONTACTED)
   contactedAt DateTime?
 
   convertedCompanyId String?   @unique
