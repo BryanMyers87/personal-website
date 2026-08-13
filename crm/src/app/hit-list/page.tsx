@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone, Search, ArrowRight } from "lucide-react";
+import { Mail, Phone, Search, ArrowRight, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { clsx } from "clsx";
 import { prisma } from "@/lib/prisma";
 import { addHitListEntryToPipeline } from "@/actions/hitList";
@@ -17,16 +17,37 @@ const STATUS_FILTERS = [
 
 type StatusFilter = (typeof STATUS_FILTERS)[number]["value"];
 
+const SORT_FIELDS = [
+  { value: "company", label: "Company" },
+  { value: "city", label: "City" },
+  { value: "phone", label: "Contact info" },
+  { value: "contacted", label: "Contacted" },
+] as const;
+
+type SortField = (typeof SORT_FIELDS)[number]["value"];
+type SortDir = "asc" | "desc";
+
 export default async function HitListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; sort?: string; dir?: string }>;
 }) {
-  const { q, status: statusParam } = await searchParams;
+  const { q, status: statusParam, sort: sortParam, dir: dirParam } = await searchParams;
   const query = q?.trim() ?? "";
   const status: StatusFilter = STATUS_FILTERS.some((s) => s.value === statusParam)
     ? (statusParam as StatusFilter)
     : "all";
+  const sort: SortField = SORT_FIELDS.some((s) => s.value === sortParam) ? (sortParam as SortField) : "company";
+  const dir: SortDir = dirParam === "desc" ? "desc" : "asc";
+
+  const orderBy =
+    sort === "city"
+      ? { city: dir }
+      : sort === "phone"
+        ? { phone: dir }
+        : sort === "contacted"
+          ? { contactedAt: dir }
+          : { companyName: dir };
 
   const [totalCount, contactedCount, convertedCount, entries] = await Promise.all([
     prisma.hitListEntry.count(),
@@ -46,9 +67,40 @@ export default async function HitListPage({
         ...(status === "not-contacted" ? { contactedAt: null } : {}),
         ...(status === "in-pipeline" ? { convertedCompanyId: { not: null } } : {}),
       },
-      orderBy: { companyName: "asc" },
+      orderBy,
     }),
   ]);
+
+  function sortHref(field: SortField) {
+    const nextDir: SortDir = sort === field && dir === "asc" ? "desc" : "asc";
+    const params = new URLSearchParams({
+      ...(query ? { q: query } : {}),
+      ...(status !== "all" ? { status } : {}),
+      sort: field,
+      dir: nextDir,
+    });
+    return `/hit-list?${params.toString()}`;
+  }
+
+  function sortableHeader(field: SortField, label: string) {
+    const active = sort === field;
+    return (
+      <th key={field} className="px-4 py-3 font-medium">
+        <Link href={sortHref(field)} className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-100">
+          {label}
+          {active ? (
+            dir === "asc" ? (
+              <ChevronUp size={12} />
+            ) : (
+              <ChevronDown size={12} />
+            )
+          ) : (
+            <ChevronsUpDown size={12} className="text-zinc-300 dark:text-zinc-600" />
+          )}
+        </Link>
+      </th>
+    );
+  }
 
   return (
     <div>
@@ -76,11 +128,13 @@ export default async function HitListPage({
           />
         </div>
         <input type="hidden" name="status" value={status} />
+        <input type="hidden" name="sort" value={sort} />
+        <input type="hidden" name="dir" value={dir} />
         <div className="flex flex-wrap gap-1.5">
           {STATUS_FILTERS.map((filter) => (
             <Link
               key={filter.value}
-              href={`/hit-list?${new URLSearchParams({ ...(query ? { q: query } : {}), status: filter.value }).toString()}`}
+              href={`/hit-list?${new URLSearchParams({ ...(query ? { q: query } : {}), status: filter.value, sort, dir }).toString()}`}
               className={clsx(
                 "rounded-lg px-2.5 py-1.5 text-xs font-medium",
                 status === filter.value
@@ -104,10 +158,10 @@ export default async function HitListPage({
           <table className="w-full text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
               <tr>
-                <th className="px-4 py-3 font-medium">Contacted</th>
-                <th className="px-4 py-3 font-medium">Company</th>
-                <th className="px-4 py-3 font-medium">City</th>
-                <th className="px-4 py-3 font-medium">Contact info</th>
+                {sortableHeader("contacted", "Contacted")}
+                {sortableHeader("company", "Company")}
+                {sortableHeader("city", "City")}
+                {sortableHeader("phone", "Contact info")}
                 <th className="px-4 py-3 font-medium">Services</th>
                 <th className="px-4 py-3 font-medium">Pipeline</th>
               </tr>
