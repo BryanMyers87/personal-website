@@ -1,6 +1,7 @@
-import { Archive, BarChart3, BellRing, Folder, KanbanSquare, Target, UserCheck, Users } from "lucide-react";
+import { Archive, BarChart3, BellRing, CalendarClock, Folder, KanbanSquare, Target, UserCheck, Users } from "lucide-react";
 
 export const NAV_ITEMS = [
+  { href: "/this-week", label: "This Week", icon: CalendarClock },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
   { href: "/reminders", label: "Reminders", icon: BellRing },

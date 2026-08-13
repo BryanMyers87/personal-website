@@ -153,13 +153,19 @@ model Reminder {
 // Freeform touch-point log for a contact — calls, emails, meetings, etc.
 // Independent of stage changes; entries are created and deleted directly.
 model JournalEntry {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   contactId String
-  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contact   Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
   body      String
-  createdAt DateTime @default(now())
+  kind      JournalEntryKind @default(NOTE)
+  createdAt DateTime         @default(now())
 
   @@index([contactId])
+}
+
+enum JournalEntryKind {
+  NOTE
+  EMAIL
 }
 
 // A prospect list imported wholesale (not fed into the pipeline as
