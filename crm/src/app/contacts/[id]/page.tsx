@@ -10,6 +10,7 @@ import ContactJournal from "@/components/ContactJournal";
 import ReminderList from "@/components/ReminderList";
 import TouchPointChecklist from "@/components/TouchPointChecklist";
 import OnboardingFileList from "@/components/OnboardingFileList";
+import HealthTierSelect from "@/components/HealthTierSelect";
 import { STAGE_LABELS } from "@/lib/stages";
 
 function formatCurrency(value: number) {
@@ -57,8 +58,11 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         }
       />
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <DealStageControl contactId={contact.id} stage={contact.stage} status={contact.status} lostReason={contact.lostReason} />
+        {contact.stage === "RELATIONSHIP_MANAGEMENT" && (
+          <HealthTierSelect contactId={contact.id} tier={contact.healthTier} />
+        )}
       </div>
 
       {contact.stage !== "RELATIONSHIP_MANAGEMENT" && (

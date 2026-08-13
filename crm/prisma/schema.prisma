@@ -30,6 +30,14 @@ enum DealStatus {
   LOST
 }
 
+// Manually-assigned relationship health for a won account. Null means no
+// tier has been set yet.
+enum AccountHealth {
+  HEALTHY
+  AT_RISK
+  CRITICAL
+}
+
 model Company {
   id        String   @id @default(cuid())
   name      String
@@ -92,6 +100,9 @@ model Contact {
   // (this app has no read access to any real calendar) — used to keep two
   // contacts from landing in the same 5-minute slot.
   firstTouchScheduledAt DateTime?
+
+  // Relationship health tier, relevant once the account is won.
+  healthTier AccountHealth?
 
   stageHistory    StageHistoryEntry[]
   journalEntries  JournalEntry[]

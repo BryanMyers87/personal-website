@@ -4,18 +4,31 @@ import { format, formatDistanceToNow, isPast } from "date-fns";
 import { clsx } from "clsx";
 import { prisma } from "@/lib/prisma";
 import { Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
+import HealthTierSelect from "@/components/HealthTierSelect";
+import { HEALTH_TIERS, type HealthTierValue } from "@/lib/accountHealth";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 }
 
+const HEALTH_FILTERS = [
+  { value: "all", label: "All" },
+  ...HEALTH_TIERS.map((t) => ({ value: t.value, label: t.label })),
+  { value: "unassigned", label: "Unassigned" },
+] as const;
+
+type HealthFilter = (typeof HEALTH_FILTERS)[number]["value"];
+
 export default async function AccountManagementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; health?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, health: healthParam } = await searchParams;
   const query = q?.trim() ?? "";
+  const health: HealthFilter = HEALTH_FILTERS.some((f) => f.value === healthParam)
+    ? (healthParam as HealthFilter)
+    : "all";
 
   const accounts = await prisma.contact.findMany({
     where: {
@@ -30,6 +43,8 @@ export default async function AccountManagementPage({
             ],
           }
         : {}),
+      ...(health === "unassigned" ? { healthTier: null } : {}),
+      ...(health !== "all" && health !== "unassigned" ? { healthTier: health as HealthTierValue } : {}),
     },
     include: {
       company: true,
@@ -40,6 +55,7 @@ export default async function AccountManagementPage({
 
   const totalJobsPerMonth = accounts.reduce((sum, a) => sum + (a.jobsPerMonth ?? 0), 0);
   const totalProjectedValue = accounts.reduce((sum, a) => sum + (a.jobsPerMonth ?? 0) * (a.pricePerHl ?? 0), 0);
+  const needsAttention = accounts.filter((a) => a.healthTier === "AT_RISK" || a.healthTier === "CRITICAL").length;
 
   return (
     <div>
@@ -48,7 +64,7 @@ export default async function AccountManagementPage({
         description="Won accounts and the relationships you're maintaining with them."
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Won accounts" value={accounts.length} />
         <StatTile label="Total jobs/mo" value={totalJobsPerMonth} />
         <StatTile
@@ -56,10 +72,11 @@ export default async function AccountManagementPage({
           value={formatCurrency(totalProjectedValue)}
           sub="Jobs/mo × price per HL/HG, summed"
         />
+        <StatTile label="Needs attention" value={needsAttention} sub="At Risk + Critical" />
       </div>
 
-      <form className="mb-4">
-        <div className="relative max-w-sm">
+      <form className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="search"
@@ -68,6 +85,23 @@ export default async function AccountManagementPage({
             placeholder="Search accounts or companies…"
             className="w-full rounded-lg border border-zinc-300 bg-white py-2 pl-9 pr-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
+        </div>
+        <input type="hidden" name="health" value={health} />
+        <div className="flex flex-wrap gap-1.5">
+          {HEALTH_FILTERS.map((filter) => (
+            <Link
+              key={filter.value}
+              href={`/account-management?${new URLSearchParams({ ...(query ? { q: query } : {}), health: filter.value }).toString()}`}
+              className={clsx(
+                "rounded-lg px-2.5 py-1.5 text-xs font-medium",
+                health === filter.value
+                  ? "bg-indigo-600 text-white"
+                  : "border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800",
+              )}
+            >
+              {filter.label}
+            </Link>
+          ))}
         </div>
       </form>
 
@@ -86,6 +120,7 @@ export default async function AccountManagementPage({
             <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-3 font-medium">Account</th>
+                <th className="px-4 py-3 font-medium">Health</th>
                 <th className="px-4 py-3 font-medium">Company</th>
                 <th className="px-4 py-3 font-medium">Contact info</th>
                 <th className="px-4 py-3 font-medium">Jobs/mo</th>
@@ -113,6 +148,9 @@ export default async function AccountManagementPage({
                         {account.firstName} {account.lastName}
                       </Link>
                       {account.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{account.title}</p>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <HealthTierSelect contactId={account.id} tier={account.healthTier} />
                     </td>
                     <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
                       {account.company ? account.company.name : <span className="text-zinc-400">—</span>}
