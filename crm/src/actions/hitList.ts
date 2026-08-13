@@ -13,7 +13,10 @@ export async function setHitListOutreachStatus(id: string, status: OutreachStatu
       contactedAt: status === "NOT_CONTACTED" ? null : new Date(),
     },
   });
+  // Not Interested entries move out of the Hit List and into the Holding
+  // Tank (and back again if reverted), so both pages need refreshing.
   revalidatePath("/hit-list");
+  revalidatePath("/holding-tank");
 }
 
 // Creates (or reuses) the Company, deletes the entry — it's moved into the

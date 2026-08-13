@@ -9,9 +9,11 @@ import { OUTREACH_STATUSES, type OutreachStatusValue } from "@/lib/hitListStatus
 
 export const dynamic = "force-dynamic";
 
+// Not Interested entries move to the Holding Tank instead of staying
+// listed here, so it's excluded as a filter option.
 const STATUS_FILTERS = [
   { value: "all", label: "All" },
-  ...OUTREACH_STATUSES.map((s) => ({ value: s.value as string, label: s.label })),
+  ...OUTREACH_STATUSES.filter((s) => s.value !== "NOT_INTERESTED").map((s) => ({ value: s.value as string, label: s.label })),
 ] as const;
 
 type StatusFilter = (typeof STATUS_FILTERS)[number]["value"];
@@ -49,7 +51,7 @@ export default async function HitListPage({
           : { companyName: dir };
 
   const [totalCount, notContactedCount, attemptedCount, respondedCount, entries] = await Promise.all([
-    prisma.hitListEntry.count(),
+    prisma.hitListEntry.count({ where: { outreachStatus: { not: "NOT_INTERESTED" } } }),
     prisma.hitListEntry.count({ where: { outreachStatus: "NOT_CONTACTED" } }),
     prisma.hitListEntry.count({ where: { outreachStatus: "ATTEMPTED" } }),
     prisma.hitListEntry.count({ where: { outreachStatus: "RESPONDED" } }),
@@ -63,7 +65,7 @@ export default async function HitListPage({
               ],
             }
           : {}),
-        ...(status !== "all" ? { outreachStatus: status as OutreachStatusValue } : {}),
+        outreachStatus: status !== "all" ? (status as OutreachStatusValue) : { not: "NOT_INTERESTED" },
       },
       orderBy,
     }),
@@ -104,7 +106,7 @@ export default async function HitListPage({
     <div>
       <PageHeader
         title="Hit List"
-        description="Contractors you're working to connect with — log a basic touchpoint here. Moving one into the pipeline removes it from this list."
+        description="Contractors you're working to connect with — log a basic touchpoint here. Moving one into the pipeline removes it from this list, and marking one Not Interested moves it to the Holding Tank."
       />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
