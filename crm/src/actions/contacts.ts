@@ -62,3 +62,14 @@ export async function deleteContact(id: string): Promise<void> {
   revalidatePath("/contacts");
   redirect("/contacts");
 }
+
+export async function toggleContactDecisionMaker(id: string, isDecisionMaker: boolean): Promise<void> {
+  const contact = await prisma.contact.update({
+    where: { id },
+    data: { isDecisionMaker },
+    select: { companyId: true },
+  });
+  revalidatePath("/contacts");
+  revalidatePath(`/contacts/${id}`);
+  if (contact.companyId) revalidatePath(`/companies/${contact.companyId}`);
+}

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { deleteCompany } from "@/actions/companies";
 import { Badge, ButtonLink, Card, PageHeader } from "@/components/ui";
 import DeleteButton from "@/components/DeleteButton";
+import DecisionMakerToggle from "@/components/DecisionMakerToggle";
 import { STAGE_COLORS, STAGE_LABELS } from "@/lib/stages";
 
 export default async function CompanyDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -111,26 +112,21 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
             ) : (
               <Card className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {company.contacts.map((contact) => (
-                  <Link
+                  <div
                     key={contact.id}
-                    href={`/contacts/${contact.id}`}
-                    className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
                   >
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-medium">
-                          {contact.firstName} {contact.lastName}
-                        </p>
-                        {contact.isDecisionMaker && (
-                          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
-                            Key decision maker
-                          </Badge>
-                        )}
-                      </div>
+                    <Link href={`/contacts/${contact.id}`} className="min-w-0 flex-1">
+                      <p className="truncate font-medium">
+                        {contact.firstName} {contact.lastName}
+                      </p>
                       {contact.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{contact.title}</p>}
+                    </Link>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <DecisionMakerToggle contactId={contact.id} isDecisionMaker={contact.isDecisionMaker} />
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">{contact.email}</p>
                     </div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{contact.email}</p>
-                  </Link>
+                  </div>
                 ))}
               </Card>
             )}

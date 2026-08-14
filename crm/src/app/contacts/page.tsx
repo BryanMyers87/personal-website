@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mail, Phone, Plus, Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Card, EmptyState, PageHeader, ButtonLink, Badge } from "@/components/ui";
+import DecisionMakerToggle from "@/components/DecisionMakerToggle";
 
 export default async function ContactsPage({
   searchParams,
@@ -85,15 +86,11 @@ export default async function ContactsPage({
               {contacts.map((contact) => (
                 <tr key={contact.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Link href={`/contacts/${contact.id}`} className="font-medium text-zinc-900 hover:underline dark:text-zinc-100">
                         {contact.firstName} {contact.lastName}
                       </Link>
-                      {contact.isDecisionMaker && (
-                        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
-                          Key decision maker
-                        </Badge>
-                      )}
+                      <DecisionMakerToggle contactId={contact.id} isDecisionMaker={contact.isDecisionMaker} />
                     </div>
                     {contact.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{contact.title}</p>}
                   </td>
