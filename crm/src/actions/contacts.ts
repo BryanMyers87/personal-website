@@ -15,6 +15,7 @@ function parse(formData: FormData) {
     phone: formData.get("phone") ?? "",
     title: formData.get("title") ?? "",
     companyId: formData.get("companyId") ?? "",
+    isDecisionMaker: formData.get("isDecisionMaker") === "on",
     notes: formData.get("notes") ?? "",
   });
 }
@@ -57,12 +58,6 @@ export async function updateContact(
 }
 
 export async function deleteContact(id: string): Promise<void> {
-  const leadCount = await prisma.lead.count({ where: { contactId: id } });
-  if (leadCount > 0) {
-    throw new Error(
-      `Cannot delete this contact: it has ${leadCount} lead(s) attached. Remove or reassign those leads first.`,
-    );
-  }
   await prisma.contact.delete({ where: { id } });
   revalidatePath("/contacts");
   redirect("/contacts");

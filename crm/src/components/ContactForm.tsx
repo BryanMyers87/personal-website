@@ -14,6 +14,7 @@ type ContactFormValues = {
   phone?: string | null;
   title?: string | null;
   companyId?: string | null;
+  isDecisionMaker?: boolean;
   notes?: string | null;
 };
 
@@ -61,6 +62,16 @@ export default function ContactForm({
           </select>
         </div>
       </div>
+
+      <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <input
+          type="checkbox"
+          name="isDecisionMaker"
+          defaultChecked={contact?.isDecisionMaker ?? false}
+          className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+        />
+        Key decision maker
+      </label>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Notes</label>

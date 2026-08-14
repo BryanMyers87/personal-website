@@ -12,8 +12,8 @@ export type ActionState = { error?: string; fieldErrors?: Record<string, string>
 function parse(formData: FormData) {
   return leadSchema.safeParse({
     title: formData.get("title") ?? "",
-    contactId: formData.get("contactId") ?? "",
     companyId: formData.get("companyId") ?? "",
+    contactId: formData.get("contactId") ?? "",
     stage: formData.get("stage") || undefined,
     source: formData.get("source") ?? "",
     estimatedValue: formData.get("estimatedValue") ?? "",
@@ -47,17 +47,11 @@ export async function createLead(_prevState: ActionState, formData: FormData): P
   const data = result.data;
   const stage = (data.stage as LeadStage | undefined) ?? LeadStage.NEW;
 
-  let companyId = data.companyId ?? null;
-  if (!companyId) {
-    const contact = await prisma.contact.findUnique({ where: { id: data.contactId }, select: { companyId: true } });
-    companyId = contact?.companyId ?? null;
-  }
-
   const lead = await prisma.lead.create({
     data: {
       title: data.title,
-      contactId: data.contactId,
-      companyId,
+      companyId: data.companyId,
+      contactId: data.contactId ?? null,
       stage,
       source: data.source,
       estimatedValue: data.estimatedValue === "" || data.estimatedValue === undefined ? null : Number(data.estimatedValue),
@@ -85,8 +79,8 @@ export async function updateLead(id: string, _prevState: ActionState, formData: 
     where: { id },
     data: {
       title: data.title,
-      contactId: data.contactId,
-      companyId: data.companyId ?? null,
+      companyId: data.companyId,
+      contactId: data.contactId ?? null,
       source: data.source,
       estimatedValue: data.estimatedValue === "" || data.estimatedValue === undefined ? null : Number(data.estimatedValue),
       appointmentDate: toDateOrNull(data.appointmentDate),

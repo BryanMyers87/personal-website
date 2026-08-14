@@ -57,17 +57,22 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </h2>
           <dl className="space-y-3 text-sm">
             <div className="flex items-center gap-2">
-              <User size={15} className="text-zinc-400" />
-              <Link href={`/contacts/${lead.contact.id}`} className="hover:underline">
-                {lead.contact.firstName} {lead.contact.lastName}
+              <Building2 size={15} className="text-zinc-400" />
+              <Link href={`/companies/${lead.company.id}`} className="hover:underline">
+                {lead.company.name}
               </Link>
             </div>
-            {lead.company && (
+            {lead.contact && (
               <div className="flex items-center gap-2">
-                <Building2 size={15} className="text-zinc-400" />
-                <Link href={`/companies/${lead.company.id}`} className="hover:underline">
-                  {lead.company.name}
+                <User size={15} className="text-zinc-400" />
+                <Link href={`/contacts/${lead.contact.id}`} className="hover:underline">
+                  {lead.contact.firstName} {lead.contact.lastName}
                 </Link>
+                {lead.contact.isDecisionMaker && (
+                  <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                    Key decision maker
+                  </Badge>
+                )}
               </div>
             )}
             {lead.appointmentDate && (

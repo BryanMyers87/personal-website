@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 export default async function PipelinePage() {
   const leads = await prisma.lead.findMany({
     include: {
-      contact: { select: { firstName: true, lastName: true } },
       company: { select: { name: true } },
+      contact: { select: { firstName: true, lastName: true } },
     },
     orderBy: { createdAt: "desc" },
   });

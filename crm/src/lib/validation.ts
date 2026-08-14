@@ -33,6 +33,7 @@ export const contactSchema = z.object({
   phone: optionalString,
   title: optionalString,
   companyId: optionalId,
+  isDecisionMaker: z.coerce.boolean().optional().default(false),
   notes: optionalString,
 });
 
@@ -40,8 +41,8 @@ export const leadStageValues = Object.values(LeadStage) as [string, ...string[]]
 
 export const leadSchema = z.object({
   title: z.string().trim().min(1, "Deal title is required"),
-  contactId: z.string().trim().min(1, "A contact is required"),
-  companyId: optionalId,
+  companyId: z.string().trim().min(1, "A company is required"),
+  contactId: optionalId,
   stage: z.enum(leadStageValues).optional(),
   source: optionalString,
   estimatedValue: z

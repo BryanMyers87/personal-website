@@ -7,10 +7,10 @@ import { Card, PageHeader } from "@/components/ui";
 export default async function EditLeadPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [lead, contacts, companies] = await Promise.all([
+  const [lead, companies, contacts] = await Promise.all([
     prisma.lead.findUnique({ where: { id } }),
-    prisma.contact.findMany({ orderBy: { firstName: "asc" }, include: { company: true } }),
     prisma.company.findMany({ orderBy: { name: "asc" } }),
+    prisma.contact.findMany({ orderBy: { firstName: "asc" }, include: { company: true } }),
   ]);
 
   if (!lead) notFound();

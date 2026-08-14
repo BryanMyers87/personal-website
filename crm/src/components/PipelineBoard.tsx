@@ -15,8 +15,8 @@ export type PipelineLead = {
   stage: LeadStage;
   status: "OPEN" | "WON" | "LOST";
   estimatedValue: number | null;
-  contact: { firstName: string; lastName: string };
-  company: { name: string } | null;
+  company: { name: string };
+  contact: { firstName: string; lastName: string } | null;
 };
 
 function formatCurrency(value: number) {
@@ -111,8 +111,8 @@ export default function PipelineBoard({ leads }: { leads: PipelineLead[] }) {
                           {lead.title}
                         </p>
                         <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                          {lead.contact.firstName} {lead.contact.lastName}
-                          {lead.company ? ` · ${lead.company.name}` : ""}
+                          {lead.company.name}
+                          {lead.contact ? ` · ${lead.contact.firstName} ${lead.contact.lastName}` : ""}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
                           {lead.estimatedValue != null && (

@@ -59,6 +59,12 @@ export async function updateCompany(
 }
 
 export async function deleteCompany(id: string): Promise<void> {
+  const leadCount = await prisma.lead.count({ where: { companyId: id } });
+  if (leadCount > 0) {
+    throw new Error(
+      `Cannot delete this company: it has ${leadCount} lead(s) attached. Remove or reassign those leads first.`,
+    );
+  }
   await prisma.company.delete({ where: { id } });
   revalidatePath("/companies");
   redirect("/companies");

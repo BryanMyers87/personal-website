@@ -9,8 +9,8 @@ type Option = { id: string; label: string };
 
 type LeadFormValues = {
   title?: string;
-  contactId?: string;
   companyId?: string | null;
+  contactId?: string | null;
   stage?: string;
   source?: string | null;
   estimatedValue?: number | null;
@@ -64,17 +64,36 @@ export default function LeadForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Contact <span className="text-red-500">*</span>
+            Company <span className="text-red-500">*</span>
           </label>
           <select
-            name="contactId"
-            defaultValue={lead?.contactId ?? ""}
+            name="companyId"
+            defaultValue={lead?.companyId ?? ""}
             required
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           >
             <option value="" disabled>
-              Select a contact
+              Select a company
             </option>
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          {state?.fieldErrors?.companyId && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{state.fieldErrors.companyId}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Contact</label>
+          <select
+            name="contactId"
+            defaultValue={lead?.contactId ?? ""}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          >
+            <option value="">No contact</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.label}
@@ -84,22 +103,6 @@ export default function LeadForm({
           {state?.fieldErrors?.contactId && (
             <p className="mt-1 text-xs text-red-600 dark:text-red-400">{state.fieldErrors.contactId}</p>
           )}
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Company</label>
-          <select
-            name="companyId"
-            defaultValue={lead?.companyId ?? ""}
-            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          >
-            <option value="">Use contact&apos;s company</option>
-            {companies.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
         </div>
 
         {showStage && (

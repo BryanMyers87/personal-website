@@ -10,9 +10,9 @@ export default async function NewLeadPage({
 }) {
   const { contactId, companyId } = await searchParams;
 
-  const [contacts, companies] = await Promise.all([
-    prisma.contact.findMany({ orderBy: { firstName: "asc" }, include: { company: true } }),
+  const [companies, contacts] = await Promise.all([
     prisma.company.findMany({ orderBy: { name: "asc" } }),
+    prisma.contact.findMany({ orderBy: { firstName: "asc" }, include: { company: true } }),
   ]);
 
   return (
@@ -23,7 +23,7 @@ export default async function NewLeadPage({
           action={createLead}
           submitLabel="Create Lead"
           showStage
-          lead={{ contactId, companyId }}
+          lead={{ companyId, contactId }}
           contacts={contacts.map((c) => ({
             id: c.id,
             label: `${c.firstName} ${c.lastName}${c.company ? ` (${c.company.name})` : ""}`,

@@ -24,7 +24,11 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
   return (
     <div>
       <PageHeader
-        title={`${contact.firstName} ${contact.lastName}`}
+        title={
+          contact.isDecisionMaker
+            ? `${contact.firstName} ${contact.lastName} · Key decision maker`
+            : `${contact.firstName} ${contact.lastName}`
+        }
         description={contact.title ?? undefined}
         action={
           <div className="flex gap-2">
@@ -93,7 +97,10 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Leads ({contact.leads.length})
             </h2>
-            <ButtonLink href={`/leads/new?contactId=${contact.id}`} variant="secondary">
+            <ButtonLink
+              href={`/leads/new?contactId=${contact.id}${contact.company ? `&companyId=${contact.company.id}` : ""}`}
+              variant="secondary"
+            >
               New Lead
             </ButtonLink>
           </div>
@@ -110,7 +117,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
                     <div>
                       <p className="font-medium">{lead.title}</p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {lead.company?.name ?? "No company"} · Created{" "}
+                        {lead.company.name} · Created{" "}
                         {formatDistanceToNow(lead.createdAt, { addSuffix: true })}
                       </p>
                     </div>

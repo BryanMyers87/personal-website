@@ -35,7 +35,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
             </ButtonLink>
             <DeleteButton
               action={deleteCompany.bind(null, company.id)}
-              confirmText={`Delete ${company.name}? Contacts and leads will be unlinked, not deleted.`}
+              confirmText={`Delete ${company.name}? Contacts will be unlinked, not deleted. Leads attached to this company must be removed or reassigned first.`}
             />
           </div>
         }
@@ -117,9 +117,16 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
                     className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
                   >
                     <div>
-                      <p className="font-medium">
-                        {contact.firstName} {contact.lastName}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-medium">
+                          {contact.firstName} {contact.lastName}
+                        </p>
+                        {contact.isDecisionMaker && (
+                          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                            Key decision maker
+                          </Badge>
+                        )}
+                      </div>
                       {contact.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{contact.title}</p>}
                     </div>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">{contact.email}</p>
@@ -143,7 +150,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
                       <div>
                         <p className="font-medium">{lead.title}</p>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {lead.contact.firstName} {lead.contact.lastName}
+                          {lead.contact ? `${lead.contact.firstName} ${lead.contact.lastName}` : "No contact"}
                         </p>
                       </div>
                       <Badge className={`${STAGE_COLORS[lead.stage].bg} ${STAGE_COLORS[lead.stage].text}`}>

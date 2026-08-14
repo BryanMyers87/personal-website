@@ -57,6 +57,8 @@ model Contact {
   companyId String?
   company   Company? @relation(fields: [companyId], references: [id])
 
+  isDecisionMaker Boolean @default(false)
+
   leads Lead[]
 
   @@index([companyId])
@@ -79,11 +81,11 @@ model Lead {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contactId String
-  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id])
 
   stageHistory StageHistoryEntry[]
 
