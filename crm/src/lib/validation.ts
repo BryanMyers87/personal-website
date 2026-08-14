@@ -6,13 +6,6 @@ const optionalString = z
   .transform((v) => (v.length === 0 ? undefined : v))
   .optional();
 
-const optionalId = z
-  .string()
-  .trim()
-  .transform((v) => (v.length === 0 ? null : v))
-  .nullable()
-  .optional();
-
 export const companySchema = z.object({
   name: z.string().trim().min(1, "Company name is required"),
   industry: optionalString,
@@ -22,6 +15,10 @@ export const companySchema = z.object({
   address: optionalString,
   city: optionalString,
   state: optionalString,
+  source: optionalString,
+  jobsPerMonth: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
+  pricePerHl: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
+  appointmentDate: optionalString,
   notes: optionalString,
 });
 
@@ -31,11 +28,6 @@ export const contactSchema = z.object({
   email: z.union([z.literal(""), z.string().trim().email()]).optional(),
   phone: optionalString,
   title: optionalString,
-  companyId: optionalId,
-  source: optionalString,
-  jobsPerMonth: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
-  pricePerHl: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
-  appointmentDate: optionalString,
   notes: optionalString,
 });
 

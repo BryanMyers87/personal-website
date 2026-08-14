@@ -14,11 +14,11 @@ export type JournalEntryData = {
   createdAt: Date | string;
 };
 
-export default function ContactJournal({
-  contactId,
+export default function CompanyJournal({
+  companyId,
   entries,
 }: {
-  contactId: string;
+  companyId: string;
   entries: JournalEntryData[];
 }) {
   const [mode, setMode] = useState<"note" | "email">("note");
@@ -32,7 +32,7 @@ export default function ContactJournal({
     if (!body) return;
     setValue("");
     startTransition(() => {
-      createJournalEntry(contactId, body);
+      createJournalEntry(companyId, body);
     });
   }
 
@@ -43,14 +43,14 @@ export default function ContactJournal({
     setSubject("");
     setSnippet("");
     startTransition(() => {
-      logEmail(contactId, s, b);
+      logEmail(companyId, s, b);
     });
   }
 
   function handleDelete(id: string) {
     if (!window.confirm("Delete this entry? This cannot be undone.")) return;
     startTransition(() => {
-      deleteJournalEntry(id, contactId);
+      deleteJournalEntry(id, companyId);
     });
   }
 

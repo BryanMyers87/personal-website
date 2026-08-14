@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { clsx } from "clsx";
-import { GripVertical } from "lucide-react";
-import { moveDealStage } from "@/actions/contacts";
+import { GripVertical, Star } from "lucide-react";
+import { moveDealStage } from "@/actions/companies";
 import { STAGE_COLORS, STAGE_LABELS, STAGE_ORDER } from "@/lib/stages";
 import type { DealStage } from "@/generated/prisma/enums";
 import { Badge } from "@/components/ui";
@@ -14,11 +14,10 @@ import { Badge } from "@/components/ui";
 // upstream into the Holding Tank — so every deal here is always OPEN.
 export type PipelineDeal = {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   stage: DealStage;
   jobsPerMonth: number | null;
-  company: { name: string } | null;
+  contacts: { id: string; firstName: string; lastName: string; isDecisionMaker: boolean }[];
 };
 
 export default function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
@@ -34,10 +33,10 @@ export default function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
   function handleDrop(stage: DealStage) {
     setDragOverStage(null);
     if (!draggingId) return;
-    const contactId = draggingId;
+    const companyId = draggingId;
     setDraggingId(null);
     startTransition(() => {
-      moveDealStage(contactId, stage);
+      moveDealStage(companyId, stage);
     });
   }
 
@@ -85,37 +84,51 @@ export default function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
               {stageDeals.length === 0 ? (
                 <p className="px-2 py-6 text-center text-xs text-zinc-400">No deals</p>
               ) : (
-                stageDeals.map((deal) => (
-                  <div
-                    key={deal.id}
-                    draggable
-                    onDragStart={() => setDraggingId(deal.id)}
-                    onDragEnd={() => setDraggingId(null)}
-                    className={clsx(
-                      "group rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition-opacity dark:border-zinc-800 dark:bg-zinc-950",
-                      draggingId === deal.id && "opacity-40",
-                    )}
-                  >
-                    <div className="flex items-start gap-2">
-                      <GripVertical size={14} className="mt-0.5 shrink-0 cursor-grab text-zinc-300 dark:text-zinc-700" />
-                      <Link href={`/contacts/${deal.id}`} className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium hover:underline">
-                          {deal.firstName} {deal.lastName}
-                        </p>
-                        {deal.company && (
-                          <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{deal.company.name}</p>
-                        )}
-                        {deal.jobsPerMonth != null && (
-                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                            <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                              {deal.jobsPerMonth} jobs/mo
-                            </Badge>
-                          </div>
-                        )}
-                      </Link>
+                stageDeals.map((deal) => {
+                  const decisionMaker = deal.contacts.find((c) => c.isDecisionMaker);
+                  const otherContacts = deal.contacts.filter((c) => c.id !== decisionMaker?.id);
+                  return (
+                    <div
+                      key={deal.id}
+                      draggable
+                      onDragStart={() => setDraggingId(deal.id)}
+                      onDragEnd={() => setDraggingId(null)}
+                      className={clsx(
+                        "group rounded-lg border border-zinc-200 bg-white p-3 shadow-sm transition-opacity dark:border-zinc-800 dark:bg-zinc-950",
+                        draggingId === deal.id && "opacity-40",
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        <GripVertical size={14} className="mt-0.5 shrink-0 cursor-grab text-zinc-300 dark:text-zinc-700" />
+                        <Link href={`/companies/${deal.id}`} className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium hover:underline">{deal.name}</p>
+                          {deal.contacts.length > 0 && (
+                            <div className="mt-1 space-y-0.5">
+                              {decisionMaker && (
+                                <p className="flex items-center gap-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
+                                  <Star size={10} className="shrink-0 fill-current text-amber-500" />
+                                  {decisionMaker.firstName} {decisionMaker.lastName}
+                                </p>
+                              )}
+                              {otherContacts.length > 0 && (
+                                <p className="truncate text-xs text-zinc-400">
+                                  {otherContacts.map((c) => `${c.firstName} ${c.lastName}`).join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {deal.jobsPerMonth != null && (
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                                {deal.jobsPerMonth} jobs/mo
+                              </Badge>
+                            </div>
+                          )}
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

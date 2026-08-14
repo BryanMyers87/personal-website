@@ -13,14 +13,14 @@ import { buildGoogleCalendarLink } from "@/lib/googleCalendarLink";
 import { Button } from "@/components/ui";
 
 export default function ScheduleFirstTouchButton({
-  contactId,
-  contactName,
+  companyId,
+  companyName,
   phone,
   email,
   scheduledAt,
 }: {
-  contactId: string;
-  contactName: string;
+  companyId: string;
+  companyName: string;
   phone: string | null;
   email: string | null;
   scheduledAt: Date | string | null;
@@ -34,7 +34,7 @@ export default function ScheduleFirstTouchButton({
       try {
         const existing = await getScheduledFirstTouchSlots();
         const slot = findNextAvailableSlot(existing.map((iso) => new Date(iso)));
-        await scheduleFirstTouchCall(contactId, slot);
+        await scheduleFirstTouchCall(companyId, slot);
       } catch {
         setError("Couldn't schedule a slot — try again.");
       }
@@ -42,7 +42,7 @@ export default function ScheduleFirstTouchButton({
   }
 
   function handleCancel() {
-    startTransition(() => cancelFirstTouchSchedule(contactId));
+    startTransition(() => cancelFirstTouchSchedule(companyId));
   }
 
   if (scheduledAt) {
@@ -52,7 +52,7 @@ export default function ScheduleFirstTouchButton({
       .filter(Boolean)
       .join("\n");
     const link = buildGoogleCalendarLink({
-      title: `Call + Text touch point — ${contactName}`,
+      title: `Call + Text touch point — ${companyName}`,
       description: ["First touch point call.", contactLines].filter(Boolean).join("\n"),
       start,
       end,

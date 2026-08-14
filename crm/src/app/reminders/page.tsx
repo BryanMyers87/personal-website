@@ -12,11 +12,11 @@ export default async function RemindersPage() {
     prisma.reminder.findMany({
       where: { completedAt: null },
       include: {
-        contact: { select: { firstName: true, lastName: true, company: { select: { name: true } } } },
+        company: { select: { name: true } },
       },
       orderBy: { dueAt: "asc" },
     }),
-    prisma.contact.count({
+    prisma.company.count({
       where: { status: { not: "LOST" }, reminders: { none: { completedAt: null } } },
     }),
   ]);
@@ -25,14 +25,13 @@ export default async function RemindersPage() {
     id: reminder.id,
     note: reminder.note,
     dueAt: reminder.dueAt,
-    contactId: reminder.contactId,
-    contactName: `${reminder.contact.firstName} ${reminder.contact.lastName}`,
-    companyName: reminder.contact.company?.name ?? null,
+    companyId: reminder.companyId,
+    companyName: reminder.company.name,
   }));
 
   return (
     <div>
-      <PageHeader title="Reminders" description="Every open reminder across all contacts, organized by due date." />
+      <PageHeader title="Reminders" description="Every open reminder across all companies, organized by due date." />
 
       {missingCount > 0 && (
         <form
@@ -41,7 +40,7 @@ export default async function RemindersPage() {
         >
           <span className="flex items-center gap-2">
             <AlertTriangle size={16} className="shrink-0" />
-            {missingCount} contact{missingCount === 1 ? "" : "s"} in the pipeline or won have no next reminder set —
+            {missingCount} compan{missingCount === 1 ? "y" : "ies"} in the pipeline or won have no next reminder set —
             it&apos;s mandatory for every one of them.
           </span>
           <button

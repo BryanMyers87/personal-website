@@ -29,9 +29,10 @@ function weekBuckets(): { key: string; label: string }[] {
 }
 
 export async function getAnalytics() {
-  const [companyCount, deals, historyEntries] = await Promise.all([
+  const [companyCount, contactCount, deals, historyEntries] = await Promise.all([
     prisma.company.count(),
-    prisma.contact.findMany({
+    prisma.contact.count(),
+    prisma.company.findMany({
       select: {
         id: true,
         stage: true,
@@ -45,7 +46,7 @@ export async function getAnalytics() {
     }),
     prisma.stageHistoryEntry.findMany({
       orderBy: { changedAt: "asc" },
-      select: { contactId: true, fromStage: true, toStage: true, changedAt: true },
+      select: { companyId: true, fromStage: true, toStage: true, changedAt: true },
     }),
   ]);
 
@@ -57,7 +58,7 @@ export async function getAnalytics() {
   const wonJobsPerMonth = wonDeals.reduce((sum, d) => sum + (d.jobsPerMonth ?? 0), 0);
 
   const totals = {
-    contacts: deals.length,
+    contacts: contactCount,
     companies: companyCount,
     deals: deals.length,
     open: openDeals.length,
@@ -72,7 +73,7 @@ export async function getAnalytics() {
   const reachedStageDealIds = new Map<DealStage, Set<string>>();
   for (const stage of STAGE_ORDER) reachedStageDealIds.set(stage, new Set());
   for (const entry of historyEntries) {
-    reachedStageDealIds.get(entry.toStage)?.add(entry.contactId);
+    reachedStageDealIds.get(entry.toStage)?.add(entry.companyId);
   }
   const funnel = STAGE_ORDER.map((stage) => ({
     stage,
@@ -122,9 +123,9 @@ export async function getAnalytics() {
   // --- Cycle time per transition, computed from consecutive history rows ----
   const entriesByDeal = new Map<string, typeof historyEntries>();
   for (const entry of historyEntries) {
-    const arr = entriesByDeal.get(entry.contactId) ?? [];
+    const arr = entriesByDeal.get(entry.companyId) ?? [];
     arr.push(entry);
-    entriesByDeal.set(entry.contactId, arr);
+    entriesByDeal.set(entry.companyId, arr);
   }
 
   const transitionDurationsMs = new Map<string, number[]>();

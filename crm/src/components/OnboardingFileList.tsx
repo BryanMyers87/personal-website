@@ -7,7 +7,7 @@ import OnboardingFileRow, { type OnboardingFileData } from "@/components/Onboard
 
 const MAX_FILES = 5;
 
-export default function OnboardingFileList({ contactId, files }: { contactId: string; files: OnboardingFileData[] }) {
+export default function OnboardingFileList({ companyId, files }: { companyId: string; files: OnboardingFileData[] }) {
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -21,7 +21,7 @@ export default function OnboardingFileList({ contactId, files }: { contactId: st
     setLabel("");
     setUrl("");
     startTransition(() => {
-      createOnboardingFile(contactId, trimmedLabel, trimmedUrl);
+      createOnboardingFile(companyId, trimmedLabel, trimmedUrl);
     });
   }
 
@@ -53,7 +53,7 @@ export default function OnboardingFileList({ contactId, files }: { contactId: st
       ) : (
         <div className="space-y-2">
           {files.map((file) => (
-            <OnboardingFileRow key={file.id} file={file} contactId={contactId} />
+            <OnboardingFileRow key={file.id} file={file} companyId={companyId} />
           ))}
         </div>
       )}

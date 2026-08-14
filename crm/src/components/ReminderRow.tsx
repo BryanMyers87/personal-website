@@ -12,9 +12,8 @@ export type ReminderRowData = {
   id: string;
   note: string;
   dueAt: Date | string;
-  contactId: string;
-  contactName: string;
-  companyName: string | null;
+  companyId: string;
+  companyName: string;
 };
 
 export default function ReminderRow({ reminder }: { reminder: ReminderRowData }) {
@@ -23,7 +22,7 @@ export default function ReminderRow({ reminder }: { reminder: ReminderRowData })
 
   function handleDelete() {
     if (!window.confirm("Delete this reminder?")) return;
-    startTransition(() => deleteReminder(reminder.id, reminder.contactId));
+    startTransition(() => deleteReminder(reminder.id, reminder.companyId));
   }
 
   return (
@@ -32,7 +31,7 @@ export default function ReminderRow({ reminder }: { reminder: ReminderRowData })
         <input
           type="checkbox"
           disabled={isPending}
-          onChange={(e) => startTransition(() => toggleReminder(reminder.id, reminder.contactId, e.target.checked))}
+          onChange={(e) => startTransition(() => toggleReminder(reminder.id, reminder.companyId, e.target.checked))}
           className="mt-1"
         />
         <span className="min-w-0">
@@ -41,9 +40,8 @@ export default function ReminderRow({ reminder }: { reminder: ReminderRowData })
             {format(new Date(reminder.dueAt), "PPp")}
             {overdue ? " · Overdue" : ""}
           </p>
-          <Link href={`/contacts/${reminder.contactId}`} className="text-xs text-indigo-600 hover:underline dark:text-indigo-400">
-            {reminder.contactName}
-            {reminder.companyName ? ` · ${reminder.companyName}` : ""}
+          <Link href={`/companies/${reminder.companyId}`} className="text-xs text-indigo-600 hover:underline dark:text-indigo-400">
+            {reminder.companyName}
           </Link>
         </span>
       </label>

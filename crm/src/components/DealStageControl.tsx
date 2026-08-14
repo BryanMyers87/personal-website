@@ -2,18 +2,18 @@
 
 import { useTransition } from "react";
 import { clsx } from "clsx";
-import { moveDealStage, markDealWon, markDealLost, reopenDeal } from "@/actions/contacts";
+import { moveDealStage, markDealWon, markDealLost, reopenDeal } from "@/actions/companies";
 import { STAGE_COLORS, STAGE_LABELS, STAGE_ORDER } from "@/lib/stages";
 import type { DealStage, DealStatus } from "@/generated/prisma/enums";
 import { Badge, Button } from "@/components/ui";
 
 export default function DealStageControl({
-  contactId,
+  companyId,
   stage,
   status,
   lostReason,
 }: {
-  contactId: string;
+  companyId: string;
   stage: DealStage;
   status: DealStatus;
   lostReason: string | null;
@@ -33,7 +33,7 @@ export default function DealStageControl({
           onChange={(e) => {
             const next = e.target.value as DealStage;
             startTransition(() => {
-              moveDealStage(contactId, next);
+              moveDealStage(companyId, next);
             });
           }}
           className={clsx(
@@ -56,7 +56,7 @@ export default function DealStageControl({
             type="button"
             variant="secondary"
             disabled={isPending}
-            onClick={() => startTransition(() => markDealWon(contactId))}
+            onClick={() => startTransition(() => markDealWon(companyId))}
           >
             Mark Won
           </Button>
@@ -66,7 +66,7 @@ export default function DealStageControl({
             disabled={isPending}
             onClick={() => {
               const reason = window.prompt("Why was this deal lost? (optional)") ?? "";
-              startTransition(() => markDealLost(contactId, reason));
+              startTransition(() => markDealLost(companyId, reason));
             }}
           >
             Mark Lost
@@ -77,7 +77,7 @@ export default function DealStageControl({
       {status === "WON" && (
         <>
           <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Won</Badge>
-          <Button type="button" variant="secondary" disabled={isPending} onClick={() => startTransition(() => reopenDeal(contactId))}>
+          <Button type="button" variant="secondary" disabled={isPending} onClick={() => startTransition(() => reopenDeal(companyId))}>
             Reopen
           </Button>
         </>
@@ -88,7 +88,7 @@ export default function DealStageControl({
           <Badge className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
             Lost{lostReason ? `: ${lostReason}` : ""}
           </Badge>
-          <Button type="button" variant="secondary" disabled={isPending} onClick={() => startTransition(() => reopenDeal(contactId))}>
+          <Button type="button" variant="secondary" disabled={isPending} onClick={() => startTransition(() => reopenDeal(companyId))}>
             Reopen
           </Button>
         </>

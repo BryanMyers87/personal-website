@@ -50,16 +50,16 @@ export default async function AccountManagementPage({
     ? (volumeParam as VolumeFilter)
     : "all";
 
-  const accounts = await prisma.contact.findMany({
+  const accounts = await prisma.company.findMany({
     where: {
       stage: "RELATIONSHIP_MANAGEMENT",
       ...(query
         ? {
             OR: [
-              { firstName: { contains: query } },
-              { lastName: { contains: query } },
+              { name: { contains: query } },
               { email: { contains: query } },
-              { company: { name: { contains: query } } },
+              { contacts: { some: { firstName: { contains: query } } } },
+              { contacts: { some: { lastName: { contains: query } } } },
             ],
           }
         : {}),
@@ -68,7 +68,7 @@ export default async function AccountManagementPage({
       ...volumeWhere(volume),
     },
     include: {
-      company: true,
+      contacts: { where: { isDecisionMaker: true }, take: 1 },
       reminders: { where: { completedAt: null }, orderBy: { dueAt: "asc" }, take: 1 },
     },
     orderBy: { closedAt: "desc" },
@@ -164,7 +164,7 @@ export default async function AccountManagementPage({
               <tr>
                 <th className="px-4 py-3 font-medium">Account</th>
                 <th className="px-4 py-3 font-medium">Health</th>
-                <th className="px-4 py-3 font-medium">Company</th>
+                <th className="px-4 py-3 font-medium">Key Contact</th>
                 <th className="px-4 py-3 font-medium">Contact info</th>
                 <th className="px-4 py-3 font-medium">Jobs/mo</th>
                 <th className="px-4 py-3 font-medium">Volume</th>
@@ -182,36 +182,45 @@ export default async function AccountManagementPage({
                   account.jobsPerMonth != null && account.pricePerHl != null
                     ? account.jobsPerMonth * account.pricePerHl
                     : null;
+                const keyContact = account.contacts[0];
                 return (
                   <tr key={account.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                     <td className="px-4 py-3">
                       <Link
-                        href={`/contacts/${account.id}`}
+                        href={`/companies/${account.id}`}
                         className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
                       >
-                        {account.firstName} {account.lastName}
+                        {account.name}
                       </Link>
-                      {account.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{account.title}</p>}
                     </td>
                     <td className="px-4 py-3">
-                      <HealthTierSelect contactId={account.id} tier={account.healthTier} />
+                      <HealthTierSelect companyId={account.id} tier={account.healthTier} />
                     </td>
                     <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
-                      {account.company ? account.company.name : <span className="text-zinc-400">—</span>}
+                      {keyContact ? (
+                        <>
+                          {keyContact.firstName} {keyContact.lastName}
+                          {keyContact.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{keyContact.title}</p>}
+                        </>
+                      ) : (
+                        <span className="text-zinc-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                       <div className="flex flex-col gap-0.5">
-                        {account.email && (
+                        {(keyContact?.email ?? account.email) && (
                           <span className="flex items-center gap-1.5 text-xs">
-                            <Mail size={12} /> {account.email}
+                            <Mail size={12} /> {keyContact?.email ?? account.email}
                           </span>
                         )}
-                        {account.phone && (
+                        {(keyContact?.phone ?? account.phone) && (
                           <span className="flex items-center gap-1.5 text-xs">
-                            <Phone size={12} /> {account.phone}
+                            <Phone size={12} /> {keyContact?.phone ?? account.phone}
                           </span>
                         )}
-                        {!account.email && !account.phone && <span className="text-zinc-400">—</span>}
+                        {!(keyContact?.email ?? account.email) && !(keyContact?.phone ?? account.phone) && (
+                          <span className="text-zinc-400">—</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">

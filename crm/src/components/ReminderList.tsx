@@ -14,7 +14,7 @@ export type ReminderData = {
   completedAt: Date | string | null;
 };
 
-export default function ReminderList({ contactId, reminders }: { contactId: string; reminders: ReminderData[] }) {
+export default function ReminderList({ companyId, reminders }: { companyId: string; reminders: ReminderData[] }) {
   const [note, setNote] = useState("");
   const [dueAt, setDueAt] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -26,13 +26,13 @@ export default function ReminderList({ contactId, reminders }: { contactId: stri
     setNote("");
     setDueAt("");
     startTransition(() => {
-      createReminder(contactId, trimmed, due);
+      createReminder(companyId, trimmed, due);
     });
   }
 
   function handleDelete(id: string) {
     if (!window.confirm("Delete this reminder?")) return;
-    startTransition(() => deleteReminder(id, contactId));
+    startTransition(() => deleteReminder(id, companyId));
   }
 
   const sorted = [...reminders].sort((a, b) => {
@@ -74,7 +74,7 @@ export default function ReminderList({ contactId, reminders }: { contactId: stri
                       type="checkbox"
                       checked={!!reminder.completedAt}
                       disabled={isPending}
-                      onChange={(e) => startTransition(() => toggleReminder(reminder.id, contactId, e.target.checked))}
+                      onChange={(e) => startTransition(() => toggleReminder(reminder.id, companyId, e.target.checked))}
                       className="mt-1"
                     />
                     <span className="min-w-0">

@@ -17,21 +17,18 @@ export default async function HoldingTankPage({
   const query = q?.trim() ?? "";
 
   const [deals, notInterested] = await Promise.all([
-    prisma.contact.findMany({
+    prisma.company.findMany({
       where: {
         status: "LOST",
         ...(query
           ? {
               OR: [
-                { firstName: { contains: query } },
-                { lastName: { contains: query } },
+                { name: { contains: query } },
                 { email: { contains: query } },
-                { company: { name: { contains: query } } },
               ],
             }
           : {}),
       },
-      include: { company: true },
       orderBy: { closedAt: "desc" },
     }),
     prisma.hitListEntry.findMany({
@@ -89,7 +86,6 @@ export default async function HoldingTankPage({
               <table className="w-full text-sm">
                 <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Contact</th>
                     <th className="px-4 py-3 font-medium">Company</th>
                     <th className="px-4 py-3 font-medium">Contact info</th>
                     <th className="px-4 py-3 font-medium">Lost from</th>
@@ -102,15 +98,11 @@ export default async function HoldingTankPage({
                     <tr key={deal.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                       <td className="px-4 py-3">
                         <Link
-                          href={`/contacts/${deal.id}`}
+                          href={`/companies/${deal.id}`}
                           className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
                         >
-                          {deal.firstName} {deal.lastName}
+                          {deal.name}
                         </Link>
-                        {deal.title && <p className="text-xs text-zinc-500 dark:text-zinc-400">{deal.title}</p>}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
-                        {deal.company ? deal.company.name : <span className="text-zinc-400">—</span>}
                       </td>
                       <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                         <div className="flex flex-col gap-0.5">

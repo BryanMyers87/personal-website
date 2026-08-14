@@ -6,10 +6,10 @@ import { setAccountHealth } from "@/actions/accountHealth";
 import { HEALTH_TIERS, healthTierInfo, type HealthTierValue } from "@/lib/accountHealth";
 
 export default function HealthTierSelect({
-  contactId,
+  companyId,
   tier,
 }: {
-  contactId: string;
+  companyId: string;
   tier: HealthTierValue | null;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -19,7 +19,7 @@ export default function HealthTierSelect({
     <select
       value={tier ?? ""}
       disabled={isPending}
-      onChange={(e) => startTransition(() => setAccountHealth(contactId, e.target.value as HealthTierValue | ""))}
+      onChange={(e) => startTransition(() => setAccountHealth(companyId, e.target.value as HealthTierValue | ""))}
       className={clsx(
         "rounded-lg border-none px-2.5 py-1.5 text-xs font-medium",
         info ? info.badge : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",

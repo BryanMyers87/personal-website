@@ -46,6 +46,8 @@ enum AccountHealth {
   CRITICAL
 }
 
+// A company IS the deal: every company carries its own pipeline stage,
+// status, and deal metadata. Contacts are the people who work there.
 model Company {
   id        String   @id @default(cuid())
   name      String
@@ -59,25 +61,6 @@ model Company {
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  contacts Contact[]
-}
-
-// A contact IS the deal: every contact carries its own pipeline stage,
-// status, and deal metadata rather than a separate Lead entity.
-model Contact {
-  id        String   @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String?
-  phone     String?
-  title     String?
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
 
   stage        DealStage  @default(PROSPECT)
   status       DealStatus @default(OPEN)
@@ -105,61 +88,81 @@ model Contact {
   // Set when "Schedule First Touch Call" books a Mon/Fri 9:30-10:30 slot for
   // the still-unchecked Call+Text touch point. Purely a local booking record
   // (this app has no read access to any real calendar) — used to keep two
-  // contacts from landing in the same 5-minute slot.
+  // companies from landing in the same 5-minute slot.
   firstTouchScheduledAt DateTime?
 
   // Relationship health tier, relevant once the account is won.
   healthTier AccountHealth?
 
+  contacts        Contact[]
   stageHistory    StageHistoryEntry[]
   journalEntries  JournalEntry[]
   reminders       Reminder[]
   onboardingFiles OnboardingFile[]
 
-  @@index([companyId])
   @@index([stage])
+}
+
+// A person at a company. No deal fields of its own — the deal lives on
+// Company. isDecisionMaker flags who actually calls the shots there.
+model Contact {
+  id              String   @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  title           String?
+  notes           String?
+  isDecisionMaker Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
 }
 
 // Every stage transition is recorded here, giving an accurate audit trail
 // and the source of truth for cycle-time analytics (time between transitions).
 model StageHistoryEntry {
   id        String    @id @default(cuid())
-  contactId String
-  contact   Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   fromStage DealStage?
   toStage   DealStage
   changedAt DateTime  @default(now())
 
-  @@index([contactId])
+  @@index([companyId])
 }
 
-// A follow-up reminder for a contact — used for scheduling future
+// A follow-up reminder for a company — used for scheduling future
 // touch points and interactions, most relevant once a deal is won and the
-// contact moves into relationship management.
+// company moves into relationship management.
 model Reminder {
   id          String    @id @default(cuid())
-  contactId   String
-  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   note        String
   dueAt       DateTime
   completedAt DateTime?
   createdAt   DateTime  @default(now())
 
-  @@index([contactId])
+  @@index([companyId])
   @@index([dueAt])
 }
 
-// Freeform touch-point log for a contact — calls, emails, meetings, etc.
+// Freeform touch-point log for a company — calls, emails, meetings, etc.
 // Independent of stage changes; entries are created and deleted directly.
 model JournalEntry {
   id        String           @id @default(cuid())
-  contactId String
-  contact   Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   body      String
   kind      JournalEntryKind @default(NOTE)
   createdAt DateTime         @default(now())
 
-  @@index([contactId])
+  @@index([companyId])
 }
 
 enum JournalEntryKind {
@@ -203,19 +206,19 @@ model TodoItem {
   @@index([dueAt])
 }
 
-// Up to 5 tracked links per contact ("first 5 files") for shepherding a new
-// client's earliest jobs — surfaced on the contact page once the deal
+// Up to 5 tracked links per company ("first 5 files") for shepherding a new
+// client's earliest jobs — surfaced on the company page once the deal
 // reaches Negotiation, and gathered account-wide in the File Tracker tab,
 // grouped into folders by company.
 model OnboardingFile {
   id          String    @id @default(cuid())
-  contactId   String
-  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   label       String
   url         String
   position    Int
   completedAt DateTime?
   createdAt   DateTime  @default(now())
 
-  @@index([contactId])
+  @@index([companyId])
 }

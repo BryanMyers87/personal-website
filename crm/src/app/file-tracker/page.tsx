@@ -9,22 +9,18 @@ export const dynamic = "force-dynamic";
 export default async function FileTrackerPage() {
   const files = await prisma.onboardingFile.findMany({
     include: {
-      contact: {
-        select: { id: true, firstName: true, lastName: true, company: { select: { id: true, name: true } } },
-      },
+      company: { select: { id: true, name: true } },
     },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
   });
 
-  type FileWithContact = (typeof files)[number];
-  type CompanyFolder = { key: string; name: string; open: FileWithContact[]; complete: FileWithContact[] };
+  type FileWithCompany = (typeof files)[number];
+  type CompanyFolder = { key: string; name: string; open: FileWithCompany[]; complete: FileWithCompany[] };
 
   const folders = new Map<string, CompanyFolder>();
   for (const file of files) {
-    const company = file.contact.company;
-    const key = company?.id ?? "no-company";
-    const name = company?.name ?? "No Company";
-    const folder = folders.get(key) ?? { key, name, open: [], complete: [] };
+    const key = file.company.id;
+    const folder = folders.get(key) ?? { key, name: file.company.name, open: [], complete: [] };
     (file.completedAt ? folder.complete : folder.open).push(file);
     folders.set(key, folder);
   }
@@ -40,7 +36,7 @@ export default async function FileTrackerPage() {
 
       {sortedFolders.length === 0 ? (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          No files tracked yet. Add up to 5 from a contact&apos;s page once they reach Negotiation.
+          No files tracked yet. Add up to 5 from a company&apos;s page once they reach Negotiation.
         </p>
       ) : (
         <div className="space-y-8">
@@ -56,11 +52,11 @@ export default async function FileTrackerPage() {
                   {folder.open.map((file) => (
                     <OnboardingFileRow
                       key={file.id}
-                      contactId={file.contactId}
+                      companyId={file.companyId}
                       file={file}
-                      contactLink={{
-                        href: `/contacts/${file.contact.id}`,
-                        name: `${file.contact.firstName} ${file.contact.lastName}`,
+                      companyLink={{
+                        href: `/companies/${file.company.id}`,
+                        name: file.company.name,
                       }}
                     />
                   ))}
@@ -76,11 +72,11 @@ export default async function FileTrackerPage() {
                     {folder.complete.map((file) => (
                       <OnboardingFileRow
                         key={file.id}
-                        contactId={file.contactId}
+                        companyId={file.companyId}
                         file={file}
-                        contactLink={{
-                          href: `/contacts/${file.contact.id}`,
-                          name: `${file.contact.firstName} ${file.contact.lastName}`,
+                        companyLink={{
+                          href: `/companies/${file.company.id}`,
+                          name: file.company.name,
                         }}
                       />
                     ))}

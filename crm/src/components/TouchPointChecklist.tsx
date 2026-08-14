@@ -14,15 +14,15 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
 
 export default function TouchPointChecklist({
-  contactId,
-  contactName,
+  companyId,
+  companyName,
   phone,
   email,
   firstTouchScheduledAt,
   dates,
 }: {
-  contactId: string;
-  contactName: string;
+  companyId: string;
+  companyName: string;
   phone: string | null;
   email: string | null;
   firstTouchScheduledAt: Date | string | null;
@@ -43,7 +43,7 @@ export default function TouchPointChecklist({
             ? {
                 label: next.label,
                 link: buildGoogleCalendarLink({
-                  title: `${next.label} touch point — ${contactName}`,
+                  title: `${next.label} touch point — ${companyName}`,
                   description: `Next step in the outreach cadence (${next.dayLabel}) after logging ${tp.label}.`,
                   start: new Date(value.getTime() + (next.dayOffset - tp.dayOffset) * ONE_DAY_MS),
                   end: new Date(value.getTime() + (next.dayOffset - tp.dayOffset) * ONE_DAY_MS + FIVE_MINUTES_MS),
@@ -60,7 +60,7 @@ export default function TouchPointChecklist({
                 type="checkbox"
                 checked={done}
                 disabled={isPending}
-                onChange={(e) => startTransition(() => setTouchPoint(contactId, tp.key, e.target.checked))}
+                onChange={(e) => startTransition(() => setTouchPoint(companyId, tp.key, e.target.checked))}
                 className="mt-0.5"
               />
               <div className="min-w-0 flex-1">
@@ -84,8 +84,8 @@ export default function TouchPointChecklist({
             {isFirstTouchPoint && !done && (
               <div className="w-full sm:w-auto">
                 <ScheduleFirstTouchButton
-                  contactId={contactId}
-                  contactName={contactName}
+                  companyId={companyId}
+                  companyName={companyName}
                   phone={phone}
                   email={email}
                   scheduledAt={firstTouchScheduledAt}

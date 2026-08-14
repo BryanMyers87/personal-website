@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { TouchPointKey } from "@/lib/touchPoints";
 
-export async function setTouchPoint(contactId: string, key: TouchPointKey, checked: boolean): Promise<void> {
+export async function setTouchPoint(companyId: string, key: TouchPointKey, checked: boolean): Promise<void> {
   const value = checked ? new Date() : null;
 
   const data =
@@ -22,6 +22,6 @@ export async function setTouchPoint(contactId: string, key: TouchPointKey, check
                 ? { touchTextAt: value }
                 : { touchBreakupAt: value };
 
-  await prisma.contact.update({ where: { id: contactId }, data });
-  revalidatePath(`/contacts/${contactId}`);
+  await prisma.company.update({ where: { id: companyId }, data });
+  revalidatePath(`/companies/${companyId}`);
 }

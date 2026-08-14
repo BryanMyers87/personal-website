@@ -34,7 +34,7 @@ export default function RemindersOverview({ reminders }: { reminders: OverviewRe
 
   if (groups.length === 0) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">No open reminders across any contact — you&apos;re caught up.</p>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">No open reminders across any company — you&apos;re caught up.</p>
     );
   }
 

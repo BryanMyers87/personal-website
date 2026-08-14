@@ -21,17 +21,16 @@ export default async function ThisWeekPage() {
   const [overdueReminders, thisWeekReminders, atRiskAccounts, hitListFollowUps, todos] = await Promise.all([
     prisma.reminder.findMany({
       where: { completedAt: null, dueAt: { lt: todayStart } },
-      include: { contact: { select: { firstName: true, lastName: true, company: { select: { name: true } } } } },
+      include: { company: { select: { name: true } } },
       orderBy: { dueAt: "asc" },
     }),
     prisma.reminder.findMany({
       where: { completedAt: null, dueAt: { gte: todayStart, lte: weekEnd } },
-      include: { contact: { select: { firstName: true, lastName: true, company: { select: { name: true } } } } },
+      include: { company: { select: { name: true } } },
       orderBy: { dueAt: "asc" },
     }),
-    prisma.contact.findMany({
+    prisma.company.findMany({
       where: { stage: "RELATIONSHIP_MANAGEMENT", healthTier: { in: ["AT_RISK", "CRITICAL"] } },
-      include: { company: true },
     }),
     prisma.hitListEntry.findMany({
       where: { outreachStatus: "ATTEMPTED" },
@@ -51,9 +50,8 @@ export default async function ThisWeekPage() {
       id: reminder.id,
       note: reminder.note,
       dueAt: reminder.dueAt,
-      contactId: reminder.contactId,
-      contactName: `${reminder.contact.firstName} ${reminder.contact.lastName}`,
-      companyName: reminder.contact.company?.name ?? null,
+      companyId: reminder.companyId,
+      companyName: reminder.company.name,
     };
   }
 
@@ -79,7 +77,7 @@ export default async function ThisWeekPage() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             To-Do <span className="ml-1 font-normal text-zinc-400">({todos.length})</span>
           </h2>
-          <p className="mb-3 text-xs text-zinc-400">Upcoming projects and check-ins — not tied to any contact.</p>
+          <p className="mb-3 text-xs text-zinc-400">Upcoming projects and check-ins — not tied to any company.</p>
           <TodoList todos={todos} />
         </div>
 
@@ -139,14 +137,11 @@ export default async function ThisWeekPage() {
                         <AlertTriangle size={15} className="shrink-0 text-red-500" />
                         <div>
                           <Link
-                            href={`/contacts/${account.id}`}
+                            href={`/companies/${account.id}`}
                             className="text-sm font-medium hover:underline"
                           >
-                            {account.firstName} {account.lastName}
+                            {account.name}
                           </Link>
-                          {account.company && (
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">{account.company.name}</p>
-                          )}
                         </div>
                       </div>
                       {info && <Badge className={info.badge}>{info.label}</Badge>}

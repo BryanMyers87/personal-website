@@ -8,19 +8,19 @@ import { prisma } from "@/lib/prisma";
 // everything rather than a date-bounded query sidesteps any server/client
 // timezone mismatch around day boundaries — the dataset here is tiny.
 export async function getScheduledFirstTouchSlots(): Promise<string[]> {
-  const rows = await prisma.contact.findMany({
+  const rows = await prisma.company.findMany({
     where: { firstTouchScheduledAt: { not: null } },
     select: { firstTouchScheduledAt: true },
   });
   return rows.map((row) => row.firstTouchScheduledAt!.toISOString());
 }
 
-export async function scheduleFirstTouchCall(contactId: string, scheduledAt: Date): Promise<void> {
-  await prisma.contact.update({ where: { id: contactId }, data: { firstTouchScheduledAt: scheduledAt } });
-  revalidatePath(`/contacts/${contactId}`);
+export async function scheduleFirstTouchCall(companyId: string, scheduledAt: Date): Promise<void> {
+  await prisma.company.update({ where: { id: companyId }, data: { firstTouchScheduledAt: scheduledAt } });
+  revalidatePath(`/companies/${companyId}`);
 }
 
-export async function cancelFirstTouchSchedule(contactId: string): Promise<void> {
-  await prisma.contact.update({ where: { id: contactId }, data: { firstTouchScheduledAt: null } });
-  revalidatePath(`/contacts/${contactId}`);
+export async function cancelFirstTouchSchedule(companyId: string): Promise<void> {
+  await prisma.company.update({ where: { id: companyId }, data: { firstTouchScheduledAt: null } });
+  revalidatePath(`/companies/${companyId}`);
 }

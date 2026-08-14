@@ -16,12 +16,12 @@ export type OnboardingFileData = {
 
 export default function OnboardingFileRow({
   file,
-  contactId,
-  contactLink,
+  companyId,
+  companyLink,
 }: {
   file: OnboardingFileData;
-  contactId: string;
-  contactLink?: { href: string; name: string };
+  companyId: string;
+  companyLink?: { href: string; name: string };
 }) {
   const [isPending, startTransition] = useTransition();
   const done = !!file.completedAt;
@@ -32,7 +32,7 @@ export default function OnboardingFileRow({
         type="checkbox"
         checked={done}
         disabled={isPending}
-        onChange={(e) => startTransition(() => toggleOnboardingFile(file.id, contactId, e.target.checked))}
+        onChange={(e) => startTransition(() => toggleOnboardingFile(file.id, companyId, e.target.checked))}
       />
       <div className="min-w-0 flex-1">
         <a
@@ -47,9 +47,9 @@ export default function OnboardingFileRow({
           <span className="truncate">{file.label}</span>
           <ExternalLink size={11} className="shrink-0 text-zinc-400" />
         </a>
-        {contactLink && (
-          <Link href={contactLink.href} className="text-xs text-zinc-400 hover:underline">
-            {contactLink.name}
+        {companyLink && (
+          <Link href={companyLink.href} className="text-xs text-zinc-400 hover:underline">
+            {companyLink.name}
           </Link>
         )}
       </div>
@@ -58,7 +58,7 @@ export default function OnboardingFileRow({
         disabled={isPending}
         onClick={() => {
           if (!window.confirm(`Remove "${file.label}"?`)) return;
-          startTransition(() => deleteOnboardingFile(file.id, contactId));
+          startTransition(() => deleteOnboardingFile(file.id, companyId));
         }}
         aria-label="Remove file"
         className="shrink-0 text-zinc-400 transition-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
