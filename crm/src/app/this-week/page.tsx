@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { startOfDay, endOfDay, addDays, formatDistanceToNow } from "date-fns";
+import { startOfDay, endOfDay, addDays, startOfWeek, formatDistanceToNow } from "date-fns";
 import { AlertTriangle, Mail, Phone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Badge, Card, PageHeader, StatTile } from "@/components/ui";
 import ReminderRow, { type ReminderRowData } from "@/components/ReminderRow";
 import HitListStatusSelect from "@/components/HitListStatusSelect";
 import TodoList from "@/components/TodoList";
+import WeeklyActivityTracker from "@/components/WeeklyActivityTracker";
 import { healthTierInfo, type HealthTierValue } from "@/lib/accountHealth";
 
 // The daily to-do list — always live, never a stale build-time snapshot.
@@ -18,30 +19,40 @@ export default async function ThisWeekPage() {
   const todayStart = startOfDay(now);
   const weekEnd = endOfDay(addDays(now, 7));
 
-  const [overdueReminders, thisWeekReminders, atRiskAccounts, hitListFollowUps, todos] = await Promise.all([
-    prisma.reminder.findMany({
-      where: { completedAt: null, dueAt: { lt: todayStart } },
-      include: { company: { select: { name: true } } },
-      orderBy: { dueAt: "asc" },
-    }),
-    prisma.reminder.findMany({
-      where: { completedAt: null, dueAt: { gte: todayStart, lte: weekEnd } },
-      include: { company: { select: { name: true } } },
-      orderBy: { dueAt: "asc" },
-    }),
-    prisma.company.findMany({
-      where: { stage: "RELATIONSHIP_MANAGEMENT", healthTier: { in: ["AT_RISK", "CRITICAL"] } },
-    }),
-    prisma.hitListEntry.findMany({
-      where: { outreachStatus: "ATTEMPTED" },
-      orderBy: { contactedAt: "asc" },
-      take: 10,
-    }),
-    prisma.todoItem.findMany({
-      where: { completedAt: null },
-      orderBy: [{ dueAt: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
-    }),
-  ]);
+  const [overdueReminders, thisWeekReminders, atRiskAccounts, hitListFollowUps, todos, weeklyActivity] =
+    await Promise.all([
+      prisma.reminder.findMany({
+        where: { completedAt: null, dueAt: { lt: todayStart } },
+        include: { company: { select: { name: true } } },
+        orderBy: { dueAt: "asc" },
+      }),
+      prisma.reminder.findMany({
+        where: { completedAt: null, dueAt: { gte: todayStart, lte: weekEnd } },
+        include: { company: { select: { name: true } } },
+        orderBy: { dueAt: "asc" },
+      }),
+      prisma.company.findMany({
+        where: { stage: "RELATIONSHIP_MANAGEMENT", healthTier: { in: ["AT_RISK", "CRITICAL"] } },
+      }),
+      prisma.hitListEntry.findMany({
+        where: { outreachStatus: "ATTEMPTED" },
+        orderBy: { contactedAt: "asc" },
+        take: 10,
+      }),
+      prisma.todoItem.findMany({
+        where: { completedAt: null },
+        orderBy: [{ dueAt: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
+      }),
+      prisma.weeklyActivity.findUnique({
+        where: { weekStart: startOfWeek(now, { weekStartsOn: 1 }) },
+      }),
+    ]);
+
+  const activityCounts = {
+    calls: weeklyActivity?.calls ?? 0,
+    dropIns: weeklyActivity?.dropIns ?? 0,
+    meetings: weeklyActivity?.meetings ?? 0,
+  };
 
   atRiskAccounts.sort((a, b) => HEALTH_RANK[a.healthTier as HealthTierValue] - HEALTH_RANK[b.healthTier as HealthTierValue]);
 
@@ -73,6 +84,14 @@ export default async function ThisWeekPage() {
       </div>
 
       <div className="space-y-8">
+        <div>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Weekly Activity
+          </h2>
+          <p className="mb-3 text-xs text-zinc-400">Goal: 60 cold calls · 20 drop-ins · 3 meetings. Resets automatically each Monday.</p>
+          <WeeklyActivityTracker counts={activityCounts} />
+        </div>
+
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             To-Do <span className="ml-1 font-normal text-zinc-400">({todos.length})</span>

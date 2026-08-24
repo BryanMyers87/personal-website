@@ -206,6 +206,20 @@ model TodoItem {
   @@index([dueAt])
 }
 
+// Manually-logged weekly activity counters (cold calls, drop-ins,
+// meetings) against fixed goals — see src/lib/weeklyActivity.ts. Keyed by
+// the Monday of the week, so a new week starts at zero automatically with
+// no explicit reset needed.
+model WeeklyActivity {
+  id        String   @id @default(cuid())
+  weekStart DateTime @unique
+  calls     Int      @default(0)
+  dropIns   Int      @default(0)
+  meetings  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Up to 5 tracked links per company ("first 5 files") for shepherding a new
 // client's earliest jobs — surfaced on the company page once the deal
 // reaches Negotiation, and gathered account-wide in the File Tracker tab,
