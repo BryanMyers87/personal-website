@@ -193,6 +193,18 @@ model HitListEntry {
   @@index([contactedAt])
 }
 
+// A cached city-level geocode for the Hit List map — only ever holds a
+// city/town point (looked up by city name alone), never a street address.
+// Cached so a page load never re-geocodes; a background action fills in
+// any city still missing a point.
+model CityLocation {
+  id        String   @id @default(cuid())
+  city      String   @unique
+  lat       Float
+  lng       Float
+  createdAt DateTime @default(now())
+}
+
 // Freeform to-do list for tracking upcoming projects and check-ins,
 // independent of any contact — surfaced on the This Week dashboard.
 model TodoItem {

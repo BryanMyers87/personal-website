@@ -1,4 +1,4 @@
-import { Archive, BarChart3, BellRing, Building2, CalendarClock, Folder, KanbanSquare, Target, UserCheck } from "lucide-react";
+import { Archive, BarChart3, BellRing, Building2, CalendarClock, Folder, KanbanSquare, Map, Target, UserCheck } from "lucide-react";
 
 export const NAV_ITEMS = [
   { href: "/this-week", label: "This Week", icon: CalendarClock },
@@ -9,5 +9,6 @@ export const NAV_ITEMS = [
   { href: "/holding-tank", label: "Holding Tank", icon: Archive },
   { href: "/file-tracker", label: "File Tracker", icon: Folder },
   { href: "/hit-list", label: "Hit List", icon: Target },
+  { href: "/map", label: "Map", icon: Map },
   { href: "/companies", label: "Companies", icon: Building2 },
 ];
