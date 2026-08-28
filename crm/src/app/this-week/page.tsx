@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { startOfDay, endOfDay, addDays, startOfWeek, formatDistanceToNow } from "date-fns";
-import { AlertTriangle, Mail, Phone } from "lucide-react";
+import { AlertTriangle, History, Mail, Phone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Badge, Card, PageHeader, StatTile } from "@/components/ui";
 import ReminderRow, { type ReminderRowData } from "@/components/ReminderRow";
@@ -85,9 +85,17 @@ export default async function ThisWeekPage() {
 
       <div className="space-y-8">
         <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            Weekly Activity
-          </h2>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Weekly Activity
+            </h2>
+            <Link
+              href="/activity-history"
+              className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              <History size={13} /> View History
+            </Link>
+          </div>
           <p className="mb-3 text-xs text-zinc-400">Goal: 60 cold calls · 40 drop-ins · 10 meetings. Resets automatically each Monday.</p>
           <WeeklyActivityTracker counts={activityCounts} />
         </div>
