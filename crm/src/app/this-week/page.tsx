@@ -88,7 +88,7 @@ export default async function ThisWeekPage() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             Weekly Activity
           </h2>
-          <p className="mb-3 text-xs text-zinc-400">Goal: 60 cold calls · 20 drop-ins · 3 meetings. Resets automatically each Monday.</p>
+          <p className="mb-3 text-xs text-zinc-400">Goal: 60 cold calls · 40 drop-ins · 10 meetings. Resets automatically each Monday.</p>
           <WeeklyActivityTracker counts={activityCounts} />
         </div>
 

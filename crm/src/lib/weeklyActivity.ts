@@ -1,7 +1,7 @@
 export const ACTIVITY_GOALS = {
   calls: 60,
-  dropIns: 20,
-  meetings: 3,
+  dropIns: 40,
+  meetings: 10,
 } as const;
 
 export type ActivityField = keyof typeof ACTIVITY_GOALS;
