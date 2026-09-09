@@ -35,10 +35,13 @@ export async function getAnalytics() {
     prisma.company.findMany({
       select: {
         id: true,
+        name: true,
         stage: true,
         status: true,
         source: true,
         jobsPerMonth: true,
+        pricePerHl: true,
+        healthTier: true,
         appointmentDate: true,
         createdAt: true,
         closedAt: true,
@@ -67,6 +70,10 @@ export async function getAnalytics() {
     openJobsPerMonth,
     wonJobsPerMonth,
     winRate: wonDeals.length + lostDeals.length > 0 ? wonDeals.length / (wonDeals.length + lostDeals.length) : null,
+    // Distinct from winRate: this counts every deal ever created (including
+    // still-open ones) rather than only closed ones, so it reads as the
+    // true top-of-funnel-to-Won conversion rate.
+    conversionRate: deals.length > 0 ? wonDeals.length / deals.length : null,
   };
 
   // --- Funnel: how many deals have ever reached each stage ------------------
@@ -176,6 +183,42 @@ export async function getAnalytics() {
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count);
 
+  // --- Revenue: projected monthly recurring value across won accounts -------
+  const projectedValue = (d: { jobsPerMonth: number | null; pricePerHl: number | null }) =>
+    (d.jobsPerMonth ?? 0) * (d.pricePerHl ?? 0);
+  const revenue = {
+    totalMonthly: wonDeals.reduce((sum, d) => sum + projectedValue(d), 0),
+  };
+
+  // --- Health: relationship-health tier breakdown across won accounts -------
+  const healthCounts: Record<"HEALTHY" | "AT_RISK" | "CRITICAL", number> = {
+    HEALTHY: 0,
+    AT_RISK: 0,
+    CRITICAL: 0,
+  };
+  let healthUnassigned = 0;
+  for (const d of wonDeals) {
+    if (d.healthTier === "HEALTHY" || d.healthTier === "AT_RISK" || d.healthTier === "CRITICAL") {
+      healthCounts[d.healthTier] += 1;
+    } else {
+      healthUnassigned += 1;
+    }
+  }
+  const health = { counts: healthCounts, unassigned: healthUnassigned };
+
+  // --- Top accounts: won accounts ranked by projected monthly value ---------
+  const topAccounts = [...wonDeals]
+    .map((d) => ({
+      id: d.id,
+      name: d.name,
+      jobsPerMonth: d.jobsPerMonth,
+      pricePerHl: d.pricePerHl,
+      projectedValue: projectedValue(d),
+      healthTier: d.healthTier,
+    }))
+    .sort((a, b) => b.projectedValue - a.projectedValue)
+    .slice(0, 30);
+
   return {
     totals,
     funnel,
@@ -185,6 +228,9 @@ export async function getAnalytics() {
     totalCycleTime,
     dealsBySource,
     dealsOverTime: dealsByWeek,
+    revenue,
+    health,
+    topAccounts,
   };
 }
 
