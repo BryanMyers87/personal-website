@@ -77,14 +77,20 @@ export function ButtonLink({
   href,
   children,
   variant = "primary",
+  target,
+  rel,
 }: {
   href: string;
   children: ReactNode;
   variant?: "primary" | "secondary";
+  target?: string;
+  rel?: string;
 }) {
   return (
     <Link
       href={href}
+      target={target}
+      rel={rel}
       className={clsx(
         "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
         variant === "primary"

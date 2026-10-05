@@ -15,6 +15,7 @@ export const companySchema = z.object({
   address: optionalString,
   city: optionalString,
   state: optionalString,
+  analyticsUrl: optionalString,
   source: optionalString,
   jobsPerMonth: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
   pricePerHl: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),

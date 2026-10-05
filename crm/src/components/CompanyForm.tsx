@@ -14,6 +14,7 @@ type CompanyFormValues = {
   address?: string | null;
   city?: string | null;
   state?: string | null;
+  analyticsUrl?: string | null;
   source?: string | null;
   jobsPerMonth?: number | null;
   pricePerHl?: number | null;
@@ -53,6 +54,14 @@ export default function CompanyForm({
         <Field label="Address" name="address" defaultValue={company?.address ?? ""} error={state?.fieldErrors?.address} />
         <Field label="City" name="city" defaultValue={company?.city ?? ""} error={state?.fieldErrors?.city} />
         <Field label="State" name="state" defaultValue={company?.state ?? ""} error={state?.fieldErrors?.state} />
+        <Field
+          label="External Analytics URL"
+          name="analyticsUrl"
+          type="url"
+          defaultValue={company?.analyticsUrl ?? ""}
+          placeholder="https://…"
+          error={state?.fieldErrors?.analyticsUrl}
+        />
 
         <Field label="Deal source" name="source" defaultValue={company?.source ?? ""} placeholder="e.g. Referral, Website, Cold Outreach" />
 

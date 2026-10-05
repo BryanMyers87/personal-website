@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { format, formatDistanceStrict, formatDistanceToNow } from "date-fns";
 import { clsx } from "clsx";
-import { Building2, Calendar, Globe, Mail, MapPin, Pencil, Phone } from "lucide-react";
+import { Building2, Calendar, ExternalLink, Globe, Mail, MapPin, Pencil, Phone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { deleteCompany } from "@/actions/companies";
 import { Badge, ButtonLink, Card, PageHeader } from "@/components/ui";
@@ -49,6 +49,11 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
         description={company.industry ?? undefined}
         action={
           <div className="flex gap-2">
+            {company.analyticsUrl && (
+              <ButtonLink href={company.analyticsUrl} target="_blank" rel="noreferrer">
+                <ExternalLink size={14} /> View Analytics
+              </ButtonLink>
+            )}
             <ButtonLink href={`/companies/${company.id}/edit`} variant="secondary">
               <Pencil size={14} /> Edit
             </ButtonLink>
