@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format } from "date-fns";
+import { clsx } from "clsx";
 import { CalendarCheck, DollarSign, Handshake, Receipt, Target, TrendingUp, Users2 } from "lucide-react";
 import { getAnalytics } from "@/lib/analytics";
 import { Badge, Card, ChartCard, PageHeader, StatTile } from "@/components/ui";
@@ -27,6 +28,11 @@ function formatCurrency(value: number) {
 
 export default async function AnalyticsPage() {
   const data = await getAnalytics();
+  const monthPct =
+    data.revenue.projectedMonthly > 0
+      ? Math.min(100, Math.round((data.revenue.actualThisMonth / data.revenue.projectedMonthly) * 100))
+      : 0;
+  const monthGoalMet = data.revenue.projectedMonthly > 0 && data.revenue.actualThisMonth >= data.revenue.projectedMonthly;
 
   return (
     <div>
@@ -48,7 +54,7 @@ export default async function AnalyticsPage() {
         <StatTile
           label="Projected Revenue"
           value={formatCurrency(data.revenue.projectedMonthly)}
-          sub="Average monthly value across accounts with revenue history"
+          sub="Avg monthly across all contractors, this year's complete months"
           icon={<DollarSign size={18} />}
         />
         <StatTile
@@ -117,9 +123,21 @@ export default async function AnalyticsPage() {
           Revenue: Actual vs Projected
         </h2>
         <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatTile label="Actual (This Month)" value={formatCurrency(data.revenue.actualThisMonth)} icon={<DollarSign size={18} />} />
+          <Card className="p-5 sm:col-span-2">
+            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This Month vs Projected</p>
+            <p className="mt-2 text-3xl font-semibold tracking-tight">
+              {formatCurrency(data.revenue.actualThisMonth)}
+              <span className="text-lg font-normal text-zinc-400"> / {formatCurrency(data.revenue.projectedMonthly)}</span>
+            </p>
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+              <div
+                className={clsx("h-full rounded-full transition-all", monthGoalMet ? "bg-emerald-500" : "bg-indigo-500")}
+                style={{ width: `${monthPct}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{monthPct}% of projected achieved this month</p>
+          </Card>
           <StatTile label="Actual (All-Time)" value={formatCurrency(data.revenue.actualAllTime)} />
-          <StatTile label="Projected (Avg Monthly)" value={formatCurrency(data.revenue.projectedMonthly)} />
         </div>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <ChartCard

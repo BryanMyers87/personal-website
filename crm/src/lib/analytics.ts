@@ -1,4 +1,4 @@
-import { startOfWeek, subWeeks, startOfMonth, subMonths, format } from "date-fns";
+import { startOfWeek, subWeeks, startOfMonth, startOfYear, subMonths, differenceInCalendarMonths, format } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { STAGE_LABELS, STAGE_ORDER } from "@/lib/stages";
 import { DealStage } from "@/generated/prisma/enums";
@@ -199,8 +199,10 @@ export async function getAnalytics() {
     .sort((a, b) => b.count - a.count);
 
   // --- Revenue: actual (logged) revenue vs. a data-driven projection —
-  // the average monthly value across accounts that have revenue history —
-  // instead of the old manual jobs/mo × price/HL input. --------------------
+  // the average monthly value across ALL contractors with logged revenue,
+  // computed from this calendar year's complete months (excluding the
+  // still-in-progress current month) — instead of the old manual
+  // jobs/mo × price/HL input. ------------------------------------------------
   const revenueMonthBuckets = monthBuckets();
   const revenueMonthIndex = new Map(revenueMonthBuckets.map((b, i) => [b.key, i]));
   const actualByMonth = revenueMonthBuckets.map((b) => ({ month: b.label, amount: 0 }));
@@ -219,8 +221,8 @@ export async function getAnalytics() {
     }
   }
 
-  // Trailing-12-months actual revenue per company — the basis for both the
-  // average-of-accounts projection below and the Top Accounts ranking.
+  // Trailing-12-months actual revenue per company — the basis for the Top
+  // Accounts ranking (unaffected by the Projected Revenue change below).
   const oneYearAgo = subMonths(new Date(), 12);
   const revenueByCompanyTTM = new Map<string, number>();
   for (const entry of revenueEntries) {
@@ -228,13 +230,19 @@ export async function getAnalytics() {
     revenueByCompanyTTM.set(entry.companyId, (revenueByCompanyTTM.get(entry.companyId) ?? 0) + entry.amount);
   }
 
-  const perAccountAvgMonthly = wonDeals
-    .map((d) => (revenueByCompanyTTM.get(d.id) ?? 0) / 12)
-    .filter((avg) => avg > 0);
-  const projectedMonthly =
-    perAccountAvgMonthly.length > 0
-      ? perAccountAvgMonthly.reduce((sum, v) => sum + v, 0) / perAccountAvgMonthly.length
-      : 0;
+  // Projected Revenue: total logged revenue across every contractor so far
+  // this calendar year, excluding the current (incomplete) month, divided
+  // by how many complete months that covers.
+  const yearStart = startOfYear(new Date());
+  const currentMonthStart = startOfMonth(new Date());
+  const monthsElapsedThisYear = differenceInCalendarMonths(currentMonthStart, yearStart);
+  let ytdRevenueExcludingCurrentMonth = 0;
+  for (const entry of revenueEntries) {
+    if (entry.receivedAt >= yearStart && entry.receivedAt < currentMonthStart) {
+      ytdRevenueExcludingCurrentMonth += entry.amount;
+    }
+  }
+  const projectedMonthly = monthsElapsedThisYear > 0 ? ytdRevenueExcludingCurrentMonth / monthsElapsedThisYear : 0;
 
   const thisMonthByAccount = wonDeals
     .map((d) => ({ name: d.name, amount: thisMonthByCompany.get(d.id) ?? 0 }))
