@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { CalendarCheck, DollarSign, Handshake, Target, TrendingUp, Users2 } from "lucide-react";
+import { format } from "date-fns";
+import { CalendarCheck, DollarSign, Handshake, Receipt, Target, TrendingUp, Users2 } from "lucide-react";
 import { getAnalytics } from "@/lib/analytics";
 import { Badge, Card, ChartCard, PageHeader, StatTile } from "@/components/ui";
 import FunnelChart from "@/components/charts/FunnelChart";
@@ -9,7 +10,7 @@ import SourceBarChart from "@/components/charts/SourceBarChart";
 import CloseHealthBar from "@/components/charts/CloseHealthBar";
 import HealthBreakdownBar from "@/components/charts/HealthBreakdownBar";
 import RevenueTrendChart from "@/components/charts/RevenueTrendChart";
-import RevenueLedger from "@/components/RevenueLedger";
+import ThisMonthRevenueChart from "@/components/charts/ThisMonthRevenueChart";
 import { healthTierInfo, type HealthTierValue } from "@/lib/accountHealth";
 
 // This dashboard reads live data on every request; it must never be served
@@ -46,8 +47,8 @@ export default async function AnalyticsPage() {
         />
         <StatTile
           label="Projected Revenue"
-          value={formatCurrency(data.revenue.totalMonthly)}
-          sub="Projected monthly, across won accounts"
+          value={formatCurrency(data.revenue.projectedMonthly)}
+          sub="Average monthly value across accounts with revenue history"
           icon={<DollarSign size={18} />}
         />
         <StatTile
@@ -118,21 +119,61 @@ export default async function AnalyticsPage() {
         <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatTile label="Actual (This Month)" value={formatCurrency(data.revenue.actualThisMonth)} icon={<DollarSign size={18} />} />
           <StatTile label="Actual (All-Time)" value={formatCurrency(data.revenue.actualAllTime)} />
-          <StatTile label="Projected (Monthly)" value={formatCurrency(data.revenue.totalMonthly)} />
+          <StatTile label="Projected (Avg Monthly)" value={formatCurrency(data.revenue.projectedMonthly)} />
         </div>
-        <ChartCard
-          title="Actual revenue by month"
-          description="Logged revenue vs. the current projected monthly figure (dashed line), last 6 months"
-        >
-          <RevenueTrendChart data={data.revenue.actualByMonth} projected={data.revenue.totalMonthly} />
-        </ChartCard>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <ChartCard
+            title="Actual revenue by month"
+            description="Logged revenue vs. the average-projected monthly figure (dashed line), last 6 months"
+          >
+            <RevenueTrendChart data={data.revenue.actualByMonth} projected={data.revenue.projectedMonthly} />
+          </ChartCard>
+
+          <ChartCard title="This month's income by account" description="How much has come in this month, per account">
+            {data.revenue.thisMonthByAccount.length === 0 ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">No won accounts yet.</p>
+            ) : (
+              <ThisMonthRevenueChart data={data.revenue.thisMonthByAccount} projected={data.revenue.projectedMonthly} />
+            )}
+          </ChartCard>
+        </div>
       </div>
 
       <div className="mb-6">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          Log Revenue
-        </h2>
-        <RevenueLedger accounts={data.wonAccounts} entries={data.revenue.entries} />
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Recent Revenue <span className="ml-1 font-normal text-zinc-400">(last 20)</span>
+          </h2>
+          <Link
+            href="/revenue"
+            className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+          >
+            <Receipt size={13} /> Log Revenue
+          </Link>
+        </div>
+        {data.revenue.entries.length === 0 ? (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">No revenue logged yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {data.revenue.entries.map((entry) => (
+              <Card key={entry.id} className="flex items-center justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <p className="text-sm">
+                    <span className="font-semibold">{formatCurrency(entry.amount)}</span>
+                    <span className="text-zinc-400"> from </span>
+                    <Link href={`/companies/${entry.companyId}`} className="font-medium hover:underline">
+                      {entry.companyName}
+                    </Link>
+                  </p>
+                  <p className="text-xs text-zinc-400">
+                    {format(new Date(entry.receivedAt), "PP")}
+                    {entry.note ? ` · ${entry.note}` : ""}
+                  </p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">

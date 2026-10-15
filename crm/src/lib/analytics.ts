@@ -198,32 +198,57 @@ export async function getAnalytics() {
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count);
 
-  // --- Revenue: projected monthly recurring value across won accounts,
-  // plus manually-logged actual revenue to compare against it -------------
-  const projectedValue = (d: { jobsPerMonth: number | null; pricePerHl: number | null }) =>
-    (d.jobsPerMonth ?? 0) * (d.pricePerHl ?? 0);
-  const totalMonthlyProjected = wonDeals.reduce((sum, d) => sum + projectedValue(d), 0);
-
+  // --- Revenue: actual (logged) revenue vs. a data-driven projection —
+  // the average monthly value across accounts that have revenue history —
+  // instead of the old manual jobs/mo × price/HL input. --------------------
   const revenueMonthBuckets = monthBuckets();
   const revenueMonthIndex = new Map(revenueMonthBuckets.map((b, i) => [b.key, i]));
   const actualByMonth = revenueMonthBuckets.map((b) => ({ month: b.label, amount: 0 }));
   const thisMonthKey = format(startOfMonth(new Date()), "yyyy-MM");
   let actualAllTime = 0;
   let actualThisMonth = 0;
+  const thisMonthByCompany = new Map<string, number>();
   for (const entry of revenueEntries) {
     actualAllTime += entry.amount;
     const key = format(startOfMonth(entry.receivedAt), "yyyy-MM");
     const idx = revenueMonthIndex.get(key);
     if (idx !== undefined) actualByMonth[idx].amount += entry.amount;
-    if (key === thisMonthKey) actualThisMonth += entry.amount;
+    if (key === thisMonthKey) {
+      actualThisMonth += entry.amount;
+      thisMonthByCompany.set(entry.companyId, (thisMonthByCompany.get(entry.companyId) ?? 0) + entry.amount);
+    }
   }
 
+  // Trailing-12-months actual revenue per company — the basis for both the
+  // average-of-accounts projection below and the Top Accounts ranking.
+  const oneYearAgo = subMonths(new Date(), 12);
+  const revenueByCompanyTTM = new Map<string, number>();
+  for (const entry of revenueEntries) {
+    if (entry.receivedAt < oneYearAgo) continue;
+    revenueByCompanyTTM.set(entry.companyId, (revenueByCompanyTTM.get(entry.companyId) ?? 0) + entry.amount);
+  }
+
+  const perAccountAvgMonthly = wonDeals
+    .map((d) => (revenueByCompanyTTM.get(d.id) ?? 0) / 12)
+    .filter((avg) => avg > 0);
+  const projectedMonthly =
+    perAccountAvgMonthly.length > 0
+      ? perAccountAvgMonthly.reduce((sum, v) => sum + v, 0) / perAccountAvgMonthly.length
+      : 0;
+
+  const thisMonthByAccount = wonDeals
+    .map((d) => ({ name: d.name, amount: thisMonthByCompany.get(d.id) ?? 0 }))
+    .sort((a, b) => b.amount - a.amount);
+
   const revenue = {
-    totalMonthly: totalMonthlyProjected,
+    projectedMonthly,
     actualAllTime,
     actualThisMonth,
     actualByMonth,
-    entries: revenueEntries.map((e) => ({
+    thisMonthByAccount,
+    // Analytics only ever shows the last 20 — the full ledger lives on
+    // its own page (/revenue), queried separately there.
+    entries: revenueEntries.slice(0, 20).map((e) => ({
       id: e.id,
       companyId: e.companyId,
       companyName: e.company.name,
@@ -232,10 +257,6 @@ export async function getAnalytics() {
       note: e.note,
     })),
   };
-
-  const wonAccounts = wonDeals
-    .map((d) => ({ id: d.id, name: d.name }))
-    .sort((a, b) => a.name.localeCompare(b.name));
 
   // --- Health: relationship-health tier breakdown across won accounts -------
   const healthCounts: Record<"HEALTHY" | "AT_RISK" | "CRITICAL", number> = {
@@ -256,13 +277,6 @@ export async function getAnalytics() {
   // --- Top accounts: won accounts ranked by actual average monthly value,
   // computed from logged revenue over the trailing 12 months (not the
   // manually-input jobs/mo × price/HL projection) ---------------------------
-  const oneYearAgo = subMonths(new Date(), 12);
-  const revenueByCompanyTTM = new Map<string, number>();
-  for (const entry of revenueEntries) {
-    if (entry.receivedAt < oneYearAgo) continue;
-    revenueByCompanyTTM.set(entry.companyId, (revenueByCompanyTTM.get(entry.companyId) ?? 0) + entry.amount);
-  }
-
   const topAccounts = wonDeals
     .map((d) => {
       const totalRevenueTTM = revenueByCompanyTTM.get(d.id) ?? 0;
@@ -290,7 +304,6 @@ export async function getAnalytics() {
     revenue,
     health,
     topAccounts,
-    wonAccounts,
   };
 }
 
