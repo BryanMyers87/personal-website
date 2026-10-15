@@ -7,6 +7,7 @@ import { companySchema } from "@/lib/validation";
 import { DealStage, DealStatus } from "@/generated/prisma/enums";
 import { STAGE_ORDER } from "@/lib/stages";
 import { ensureNextReminder } from "@/lib/nextReminder";
+import { syncContractReminder } from "@/lib/contractReminder";
 
 export type ActionState = { error?: string; fieldErrors?: Record<string, string> } | undefined;
 
@@ -25,6 +26,7 @@ function parse(formData: FormData) {
     jobsPerMonth: formData.get("jobsPerMonth") ?? "",
     pricePerHl: formData.get("pricePerHl") ?? "",
     appointmentDate: formData.get("appointmentDate") ?? "",
+    contractDate: formData.get("contractDate") ?? "",
     notes: formData.get("notes") ?? "",
   });
 }
@@ -71,6 +73,7 @@ export async function createCompany(_prevState: ActionState, formData: FormData)
       jobsPerMonth: toNumberOrNull(data.jobsPerMonth),
       pricePerHl: toNumberOrNull(data.pricePerHl),
       appointmentDate: toDateOrNull(data.appointmentDate),
+      contractDate: toDateOrNull(data.contractDate),
       notes: data.notes,
       stageHistory: {
         create: { fromStage: null, toStage: DealStage.PROSPECT },
@@ -79,6 +82,7 @@ export async function createCompany(_prevState: ActionState, formData: FormData)
   });
 
   await ensureNextReminder(company.id, company.name);
+  await syncContractReminder(company.id, toDateOrNull(data.contractDate));
 
   revalidatePath("/companies");
   revalidatePath("/pipeline");
@@ -114,14 +118,18 @@ export async function updateCompany(
       jobsPerMonth: toNumberOrNull(data.jobsPerMonth),
       pricePerHl: toNumberOrNull(data.pricePerHl),
       appointmentDate: toDateOrNull(data.appointmentDate),
+      contractDate: toDateOrNull(data.contractDate),
       notes: data.notes,
     },
   });
+
+  await syncContractReminder(id, toDateOrNull(data.contractDate));
 
   revalidatePath("/companies");
   revalidatePath(`/companies/${id}`);
   revalidatePath("/pipeline");
   revalidatePath("/analytics");
+  revalidatePath("/reminders");
   redirect(`/companies/${id}`);
 }
 

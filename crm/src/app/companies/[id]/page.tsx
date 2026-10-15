@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { format, formatDistanceStrict, formatDistanceToNow } from "date-fns";
 import { clsx } from "clsx";
-import { Building2, Calendar, ExternalLink, Globe, Mail, MapPin, Pencil, Phone } from "lucide-react";
+import { Building2, Calendar, ExternalLink, FileSignature, Globe, Mail, MapPin, Pencil, Phone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { deleteCompany } from "@/actions/companies";
 import { Badge, ButtonLink, Card, PageHeader } from "@/components/ui";
@@ -10,6 +10,7 @@ import DealStageControl from "@/components/DealStageControl";
 import CompanyJournal from "@/components/CompanyJournal";
 import ReminderList from "@/components/ReminderList";
 import TouchPointChecklist from "@/components/TouchPointChecklist";
+import RelationshipChecklist from "@/components/RelationshipChecklist";
 import OnboardingFileList from "@/components/OnboardingFileList";
 import HealthTierSelect from "@/components/HealthTierSelect";
 import ContactList from "@/components/ContactList";
@@ -72,7 +73,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
         )}
       </div>
 
-      {company.stage !== "RELATIONSHIP_MANAGEMENT" && (
+      {company.stage !== "RELATIONSHIP_MANAGEMENT" ? (
         <div className="mb-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             Touch Point Cadence
@@ -91,6 +92,22 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
               touchCallAt: company.touchCallAt,
               touchTextAt: company.touchTextAt,
               touchBreakupAt: company.touchBreakupAt,
+            }}
+          />
+        </div>
+      ) : (
+        <div className="mb-6">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Relationship Management Checklist
+          </h2>
+          <RelationshipChecklist
+            companyId={company.id}
+            dates={{
+              sopCompletedAt: company.sopCompletedAt,
+              contractCreatedAt: company.contractCreatedAt,
+              contractSignedAt: company.contractSignedAt,
+              dropZoneCredentialsAt: company.dropZoneCredentialsAt,
+              contractorAppOnboardedAt: company.contractorAppOnboardedAt,
             }}
           />
         </div>
@@ -153,13 +170,20 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
                 <span>{format(company.appointmentDate, "PPp")}</span>
               </div>
             )}
+            {company.contractDate && (
+              <div className="flex items-center gap-2">
+                <FileSignature size={15} className="text-zinc-400" />
+                <span>Contract expires {format(company.contractDate, "PP")}</span>
+              </div>
+            )}
             {!company.industry &&
               !company.website &&
               !company.email &&
               !company.phone &&
               !company.address &&
               !location &&
-              !company.appointmentDate && <p className="text-zinc-400">No additional details yet.</p>}
+              !company.appointmentDate &&
+              !company.contractDate && <p className="text-zinc-400">No additional details yet.</p>}
           </dl>
 
           <div className="mt-5 grid grid-cols-2 gap-4">

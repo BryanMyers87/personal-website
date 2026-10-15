@@ -95,6 +95,19 @@ model Company {
   // companies from landing in the same 5-minute slot.
   firstTouchScheduledAt DateTime?
 
+  // Relationship Management onboarding/compliance checklist, shown once a
+  // deal is won. Each is null until checked, then holds the date it was
+  // logged done — same pattern as the touch-point cadence checklist above.
+  sopCompletedAt           DateTime?
+  contractCreatedAt        DateTime?
+  contractSignedAt         DateTime?
+  dropZoneCredentialsAt    DateTime?
+  contractorAppOnboardedAt DateTime?
+
+  // The contract's expiration/renewal date. Setting or changing it keeps a
+  // reminder due 30 days beforehand in sync (see src/lib/contractReminder.ts).
+  contractDate DateTime?
+
   // Relationship health tier, relevant once the account is won.
   healthTier AccountHealth?
 

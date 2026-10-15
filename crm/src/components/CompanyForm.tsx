@@ -19,6 +19,7 @@ type CompanyFormValues = {
   jobsPerMonth?: number | null;
   pricePerHl?: number | null;
   appointmentDate?: Date | string | null;
+  contractDate?: Date | string | null;
   notes?: string | null;
 };
 
@@ -36,6 +37,7 @@ export default function CompanyForm({
   const appointmentValue = company?.appointmentDate
     ? new Date(company.appointmentDate).toISOString().slice(0, 16)
     : "";
+  const contractDateValue = company?.contractDate ? new Date(company.contractDate).toISOString().slice(0, 10) : "";
 
   return (
     <form action={formAction} className="space-y-5">
@@ -95,6 +97,16 @@ export default function CompanyForm({
             name="appointmentDate"
             type="datetime-local"
             defaultValue={appointmentValue}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Contract date</label>
+          <input
+            name="contractDate"
+            type="date"
+            defaultValue={contractDateValue}
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </div>

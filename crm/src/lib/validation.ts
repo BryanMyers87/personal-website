@@ -20,6 +20,7 @@ export const companySchema = z.object({
   jobsPerMonth: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
   pricePerHl: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
   appointmentDate: optionalString,
+  contractDate: optionalString,
   notes: optionalString,
 });
 
