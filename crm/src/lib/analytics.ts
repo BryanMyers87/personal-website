@@ -5,6 +5,7 @@ import { DealStage } from "@/generated/prisma/enums";
 
 const WEEKS_OF_HISTORY = 12;
 const MONTHS_OF_REVENUE_HISTORY = 6;
+const TOP_ACCOUNTS_LIMIT = 20;
 
 // Consecutive stage pairs that make up the pipeline:
 // prospect -> qualify -> meeting -> proposal -> negotiation.
@@ -252,18 +253,30 @@ export async function getAnalytics() {
   }
   const health = { counts: healthCounts, unassigned: healthUnassigned };
 
-  // --- Top accounts: won accounts ranked by projected monthly value ---------
-  const topAccounts = [...wonDeals]
-    .map((d) => ({
-      id: d.id,
-      name: d.name,
-      jobsPerMonth: d.jobsPerMonth,
-      pricePerHl: d.pricePerHl,
-      projectedValue: projectedValue(d),
-      healthTier: d.healthTier,
-    }))
-    .sort((a, b) => b.projectedValue - a.projectedValue)
-    .slice(0, 30);
+  // --- Top accounts: won accounts ranked by actual average monthly value,
+  // computed from logged revenue over the trailing 12 months (not the
+  // manually-input jobs/mo × price/HL projection) ---------------------------
+  const oneYearAgo = subMonths(new Date(), 12);
+  const revenueByCompanyTTM = new Map<string, number>();
+  for (const entry of revenueEntries) {
+    if (entry.receivedAt < oneYearAgo) continue;
+    revenueByCompanyTTM.set(entry.companyId, (revenueByCompanyTTM.get(entry.companyId) ?? 0) + entry.amount);
+  }
+
+  const topAccounts = wonDeals
+    .map((d) => {
+      const totalRevenueTTM = revenueByCompanyTTM.get(d.id) ?? 0;
+      return {
+        id: d.id,
+        name: d.name,
+        avgMonthlyValue: totalRevenueTTM / 12,
+        totalRevenueTTM,
+        healthTier: d.healthTier,
+      };
+    })
+    .filter((a) => a.totalRevenueTTM > 0)
+    .sort((a, b) => b.avgMonthlyValue - a.avgMonthlyValue)
+    .slice(0, TOP_ACCOUNTS_LIMIT);
 
   return {
     totals,

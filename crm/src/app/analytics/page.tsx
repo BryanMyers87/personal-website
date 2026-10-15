@@ -157,10 +157,10 @@ export default async function AnalyticsPage() {
 
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          Top 30 Accounts <span className="ml-1 font-normal text-zinc-400">by projected monthly value</span>
+          Top 20 Accounts <span className="ml-1 font-normal text-zinc-400">by average monthly value, trailing 12 months of logged revenue</span>
         </h2>
         {data.topAccounts.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">No won accounts yet.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">No accounts with logged revenue yet.</p>
         ) : (
           <Card className="overflow-hidden">
             <table className="w-full text-sm">
@@ -169,9 +169,8 @@ export default async function AnalyticsPage() {
                   <th className="px-4 py-3 font-medium">#</th>
                   <th className="px-4 py-3 font-medium">Account</th>
                   <th className="px-4 py-3 font-medium">Health</th>
-                  <th className="px-4 py-3 font-medium">Jobs/mo</th>
-                  <th className="px-4 py-3 font-medium">Price/HL-HG</th>
-                  <th className="px-4 py-3 font-medium">Projected value</th>
+                  <th className="px-4 py-3 font-medium">Avg monthly value</th>
+                  <th className="px-4 py-3 font-medium">Total (12mo)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -191,15 +190,8 @@ export default async function AnalyticsPage() {
                       <td className="px-4 py-3">
                         {info ? <Badge className={info.badge}>{info.label}</Badge> : <span className="text-zinc-400">—</span>}
                       </td>
-                      <td className="px-4 py-3">
-                        {account.jobsPerMonth != null ? account.jobsPerMonth : <span className="text-zinc-400">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        {account.pricePerHl != null ? formatCurrency(account.pricePerHl) : <span className="text-zinc-400">—</span>}
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        {account.projectedValue > 0 ? formatCurrency(account.projectedValue) : <span className="text-zinc-400 font-normal">—</span>}
-                      </td>
+                      <td className="px-4 py-3 font-medium">{formatCurrency(account.avgMonthlyValue)}</td>
+                      <td className="px-4 py-3">{formatCurrency(account.totalRevenueTTM)}</td>
                     </tr>
                   );
                 })}
