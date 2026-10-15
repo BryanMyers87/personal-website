@@ -12,3 +12,7 @@ export type RelationshipChecklistField = (typeof RELATIONSHIP_CHECKLIST)[number]
 export type RelationshipChecklistDates = {
   [K in RelationshipChecklistField]: Date | string | null;
 };
+
+export function isRelationshipChecklistComplete(dates: RelationshipChecklistDates): boolean {
+  return RELATIONSHIP_CHECKLIST.every((item) => !!dates[item.field]);
+}

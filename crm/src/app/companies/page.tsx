@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, EmptyState, PageHeader, ButtonLink, Badge } from "@/components/ui";
 import { STAGE_COLORS, STAGE_LABELS } from "@/lib/stages";
 import { parseCompanySort } from "@/lib/companySort";
+import { isRelationshipChecklistComplete } from "@/lib/relationshipChecklist";
 import CompanySortSelect from "@/components/CompanySortSelect";
 import ScheduleFirstTouchButton from "@/components/ScheduleFirstTouchButton";
 
@@ -99,9 +100,20 @@ export default async function CompaniesPage({
               {companies.map((company) => (
                 <tr key={company.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                   <td className="px-4 py-3">
-                    <Link href={`/companies/${company.id}`} className="font-medium text-zinc-900 hover:underline dark:text-zinc-100">
-                      {company.name}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link href={`/companies/${company.id}`} className="font-medium text-zinc-900 hover:underline dark:text-zinc-100">
+                        {company.name}
+                      </Link>
+                      {company.stage === "RELATIONSHIP_MANAGEMENT" && isRelationshipChecklistComplete(company) && (
+                        <Star
+                          size={14}
+                          className="shrink-0 fill-current text-amber-500"
+                          aria-label="Relationship Management checklist complete"
+                        >
+                          <title>Relationship Management checklist complete</title>
+                        </Star>
+                      )}
+                    </div>
                     {company.city && <p className="text-xs text-zinc-500 dark:text-zinc-400">{company.city}</p>}
                   </td>
                   <td className="px-4 py-3">
