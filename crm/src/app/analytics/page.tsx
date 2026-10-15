@@ -1,15 +1,11 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { clsx } from "clsx";
-import { CalendarCheck, DollarSign, Handshake, Receipt, Target, TrendingUp, Users2 } from "lucide-react";
+import { DollarSign, Receipt } from "lucide-react";
 import { getAnalytics } from "@/lib/analytics";
 import { Badge, Card, ChartCard, PageHeader, StatTile } from "@/components/ui";
 import FunnelChart from "@/components/charts/FunnelChart";
-import TrendChart from "@/components/charts/TrendChart";
-import CycleTimeChart from "@/components/charts/CycleTimeChart";
 import SourceBarChart from "@/components/charts/SourceBarChart";
-import CloseHealthBar from "@/components/charts/CloseHealthBar";
-import HealthBreakdownBar from "@/components/charts/HealthBreakdownBar";
 import RevenueTrendChart from "@/components/charts/RevenueTrendChart";
 import ThisMonthRevenueChart from "@/components/charts/ThisMonthRevenueChart";
 import { healthTierInfo, type HealthTierValue } from "@/lib/accountHealth";
@@ -17,10 +13,6 @@ import { healthTierInfo, type HealthTierValue } from "@/lib/accountHealth";
 // This dashboard reads live data on every request; it must never be served
 // from a build-time static snapshot.
 export const dynamic = "force-dynamic";
-
-function formatPercent(value: number | null) {
-  return value == null ? "—" : `${Math.round(value * 100)}%`;
-}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
@@ -33,6 +25,7 @@ export default async function AnalyticsPage() {
       ? Math.min(100, Math.round((data.revenue.actualThisMonth / data.revenue.projectedMonthly) * 100))
       : 0;
   const monthGoalMet = data.revenue.projectedMonthly > 0 && data.revenue.actualThisMonth >= data.revenue.projectedMonthly;
+  const recentEntries = data.revenue.entries.slice(0, 15);
 
   return (
     <div>
@@ -40,81 +33,16 @@ export default async function AnalyticsPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatTile
-          label="Total deals"
-          value={data.totals.deals}
-          sub={`${data.totals.open} open · ${data.totals.won} won · ${data.totals.lost} lost`}
-          icon={<TrendingUp size={18} />}
-        />
-        <StatTile
-          label="Conversion rate"
-          value={formatPercent(data.totals.conversionRate)}
-          sub="Won ÷ every deal ever created"
-          icon={<Target size={18} />}
-        />
-        <StatTile
           label="Projected Revenue"
           value={formatCurrency(data.revenue.projectedMonthly)}
           sub="Avg monthly across all contractors, this year's complete months"
           icon={<DollarSign size={18} />}
         />
-        <StatTile
-          label="Win rate"
-          value={formatPercent(data.totals.winRate)}
-          sub={`${data.totals.openJobsPerMonth} jobs/mo in open pipeline`}
-          icon={<Handshake size={18} />}
-        />
-        <StatTile
-          label="Meetings booked"
-          value={data.meetings.total}
-          sub="Deals that reached Meeting"
-          icon={<CalendarCheck size={18} />}
-        />
-        <StatTile
-          label="Contacts & companies"
-          value={`${data.totals.contacts} / ${data.totals.companies}`}
-          sub="Contacts / Companies on file"
-          icon={<Users2 size={18} />}
-        />
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <ChartCard
-          title="Pipeline funnel"
-          description="Deals that have ever reached each stage"
-          className="lg:col-span-2"
-        >
+      <div className="mb-6">
+        <ChartCard title="Pipeline funnel" description="Deals that have ever reached each stage">
           <FunnelChart data={data.funnel} />
-        </ChartCard>
-
-        <ChartCard title="Close health" description="Outcome of deals once they reach Negotiation">
-          <CloseHealthBar
-            won={data.closeHealth.won}
-            lost={data.closeHealth.lost}
-            stillOpen={data.closeHealth.stillOpen}
-          />
-          <p className="mt-4 text-sm">
-            <span className="text-2xl font-semibold">{formatPercent(data.closeHealth.successRate)}</span>
-            <span className="ml-2 text-zinc-500 dark:text-zinc-400">close success rate</span>
-          </p>
-        </ChartCard>
-      </div>
-
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <ChartCard
-          title="Cycle time"
-          description="Average time per stage of the pipeline"
-          className="lg:col-span-2"
-        >
-          <CycleTimeChart
-            data={[
-              ...data.cycleTimes.map((c) => ({ label: c.label, avgHours: c.avgHours, count: c.count })),
-              { label: "Total: Created → Won", avgHours: data.totalCycleTime.avgHours, count: data.totalCycleTime.count },
-            ]}
-          />
-        </ChartCard>
-
-        <ChartCard title="Account health" description="Relationship health across won accounts">
-          <HealthBreakdownBar counts={data.health.counts} unassigned={data.health.unassigned} />
         </ChartCard>
       </div>
 
@@ -158,9 +86,19 @@ export default async function AnalyticsPage() {
       </div>
 
       <div className="mb-6">
+        <ChartCard title="Deals by source" description="Where deals are coming from">
+          {data.dealsBySource.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No deals yet.</p>
+          ) : (
+            <SourceBarChart data={data.dealsBySource} />
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="mb-6">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            Recent Revenue <span className="ml-1 font-normal text-zinc-400">(last 20)</span>
+            Recent Revenue <span className="ml-1 font-normal text-zinc-400">(last 15)</span>
           </h2>
           <Link
             href="/revenue"
@@ -169,11 +107,11 @@ export default async function AnalyticsPage() {
             <Receipt size={13} /> Log Revenue
           </Link>
         </div>
-        {data.revenue.entries.length === 0 ? (
+        {recentEntries.length === 0 ? (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">No revenue logged yet.</p>
         ) : (
           <div className="space-y-2">
-            {data.revenue.entries.map((entry) => (
+            {recentEntries.map((entry) => (
               <Card key={entry.id} className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
                   <p className="text-sm">
@@ -192,26 +130,6 @@ export default async function AnalyticsPage() {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard title="Deals by source" description="Where deals are coming from">
-          {data.dealsBySource.length === 0 ? (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">No deals yet.</p>
-          ) : (
-            <SourceBarChart data={data.dealsBySource} />
-          )}
-        </ChartCard>
-
-        <ChartCard title="Leads created" description="New leads (contacts) per week, last 12 weeks">
-          <TrendChart data={data.dealsOverTime} unitLabel="new leads" />
-        </ChartCard>
-      </div>
-
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard title="Meetings booked" description="Meetings booked per week, last 12 weeks">
-          <TrendChart data={data.meetings.byWeek} unitLabel="meetings" />
-        </ChartCard>
       </div>
 
       <div>
