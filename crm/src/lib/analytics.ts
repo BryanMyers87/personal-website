@@ -238,6 +238,7 @@ export async function getAnalytics() {
 
   const thisMonthByAccount = wonDeals
     .map((d) => ({ name: d.name, amount: thisMonthByCompany.get(d.id) ?? 0 }))
+    .filter((a) => a.amount > 0)
     .sort((a, b) => b.amount - a.amount);
 
   const revenue = {

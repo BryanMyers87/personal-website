@@ -131,7 +131,7 @@ export default async function AnalyticsPage() {
 
           <ChartCard title="This month's income by account" description="How much has come in this month, per account">
             {data.revenue.thisMonthByAccount.length === 0 ? (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">No won accounts yet.</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">No revenue logged this month yet.</p>
             ) : (
               <ThisMonthRevenueChart data={data.revenue.thisMonthByAccount} projected={data.revenue.projectedMonthly} />
             )}
