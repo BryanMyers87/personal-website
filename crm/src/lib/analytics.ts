@@ -1,9 +1,10 @@
-import { startOfWeek, subWeeks, format } from "date-fns";
+import { startOfWeek, subWeeks, startOfMonth, subMonths, format } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { STAGE_LABELS, STAGE_ORDER } from "@/lib/stages";
 import { DealStage } from "@/generated/prisma/enums";
 
 const WEEKS_OF_HISTORY = 12;
+const MONTHS_OF_REVENUE_HISTORY = 6;
 
 // Consecutive stage pairs that make up the pipeline:
 // prospect -> qualify -> meeting -> proposal -> negotiation.
@@ -28,8 +29,17 @@ function weekBuckets(): { key: string; label: string }[] {
   return buckets;
 }
 
+function monthBuckets(): { key: string; label: string }[] {
+  const buckets: { key: string; label: string }[] = [];
+  for (let i = MONTHS_OF_REVENUE_HISTORY - 1; i >= 0; i--) {
+    const monthStart = subMonths(startOfMonth(new Date()), i);
+    buckets.push({ key: format(monthStart, "yyyy-MM"), label: format(monthStart, "MMM yyyy") });
+  }
+  return buckets;
+}
+
 export async function getAnalytics() {
-  const [companyCount, contactCount, deals, historyEntries] = await Promise.all([
+  const [companyCount, contactCount, deals, historyEntries, revenueEntries] = await Promise.all([
     prisma.company.count(),
     prisma.contact.count(),
     prisma.company.findMany({
@@ -50,6 +60,10 @@ export async function getAnalytics() {
     prisma.stageHistoryEntry.findMany({
       orderBy: { changedAt: "asc" },
       select: { companyId: true, fromStage: true, toStage: true, changedAt: true },
+    }),
+    prisma.revenueEntry.findMany({
+      include: { company: { select: { name: true } } },
+      orderBy: { receivedAt: "desc" },
     }),
   ]);
 
@@ -183,12 +197,44 @@ export async function getAnalytics() {
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count);
 
-  // --- Revenue: projected monthly recurring value across won accounts -------
+  // --- Revenue: projected monthly recurring value across won accounts,
+  // plus manually-logged actual revenue to compare against it -------------
   const projectedValue = (d: { jobsPerMonth: number | null; pricePerHl: number | null }) =>
     (d.jobsPerMonth ?? 0) * (d.pricePerHl ?? 0);
+  const totalMonthlyProjected = wonDeals.reduce((sum, d) => sum + projectedValue(d), 0);
+
+  const revenueMonthBuckets = monthBuckets();
+  const revenueMonthIndex = new Map(revenueMonthBuckets.map((b, i) => [b.key, i]));
+  const actualByMonth = revenueMonthBuckets.map((b) => ({ month: b.label, amount: 0 }));
+  const thisMonthKey = format(startOfMonth(new Date()), "yyyy-MM");
+  let actualAllTime = 0;
+  let actualThisMonth = 0;
+  for (const entry of revenueEntries) {
+    actualAllTime += entry.amount;
+    const key = format(startOfMonth(entry.receivedAt), "yyyy-MM");
+    const idx = revenueMonthIndex.get(key);
+    if (idx !== undefined) actualByMonth[idx].amount += entry.amount;
+    if (key === thisMonthKey) actualThisMonth += entry.amount;
+  }
+
   const revenue = {
-    totalMonthly: wonDeals.reduce((sum, d) => sum + projectedValue(d), 0),
+    totalMonthly: totalMonthlyProjected,
+    actualAllTime,
+    actualThisMonth,
+    actualByMonth,
+    entries: revenueEntries.map((e) => ({
+      id: e.id,
+      companyId: e.companyId,
+      companyName: e.company.name,
+      amount: e.amount,
+      receivedAt: e.receivedAt,
+      note: e.note,
+    })),
   };
+
+  const wonAccounts = wonDeals
+    .map((d) => ({ id: d.id, name: d.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // --- Health: relationship-health tier breakdown across won accounts -------
   const healthCounts: Record<"HEALTHY" | "AT_RISK" | "CRITICAL", number> = {
@@ -231,6 +277,7 @@ export async function getAnalytics() {
     revenue,
     health,
     topAccounts,
+    wonAccounts,
   };
 }
 

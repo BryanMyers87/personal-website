@@ -103,6 +103,7 @@ model Company {
   journalEntries  JournalEntry[]
   reminders       Reminder[]
   onboardingFiles OnboardingFile[]
+  revenueEntries  RevenueEntry[]
 
   @@index([stage])
 }
@@ -251,4 +252,21 @@ model OnboardingFile {
   createdAt   DateTime  @default(now())
 
   @@index([companyId])
+}
+
+// A manually-logged actual revenue payment for a won account, with the
+// date it was received — entered directly on the Analytics page (not the
+// company page, since it's a running ledger rather than a deal field) and
+// plotted there against the projected monthly figure.
+model RevenueEntry {
+  id         String   @id @default(cuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  amount     Float
+  receivedAt DateTime
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@index([companyId])
+  @@index([receivedAt])
 }

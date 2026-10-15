@@ -8,6 +8,8 @@ import CycleTimeChart from "@/components/charts/CycleTimeChart";
 import SourceBarChart from "@/components/charts/SourceBarChart";
 import CloseHealthBar from "@/components/charts/CloseHealthBar";
 import HealthBreakdownBar from "@/components/charts/HealthBreakdownBar";
+import RevenueTrendChart from "@/components/charts/RevenueTrendChart";
+import RevenueLedger from "@/components/RevenueLedger";
 import { healthTierInfo, type HealthTierValue } from "@/lib/accountHealth";
 
 // This dashboard reads live data on every request; it must never be served
@@ -43,7 +45,7 @@ export default async function AnalyticsPage() {
           icon={<Target size={18} />}
         />
         <StatTile
-          label="Revenue"
+          label="Projected Revenue"
           value={formatCurrency(data.revenue.totalMonthly)}
           sub="Projected monthly, across won accounts"
           icon={<DollarSign size={18} />}
@@ -107,6 +109,30 @@ export default async function AnalyticsPage() {
         <ChartCard title="Account health" description="Relationship health across won accounts">
           <HealthBreakdownBar counts={data.health.counts} unassigned={data.health.unassigned} />
         </ChartCard>
+      </div>
+
+      <div className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          Revenue: Actual vs Projected
+        </h2>
+        <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatTile label="Actual (This Month)" value={formatCurrency(data.revenue.actualThisMonth)} icon={<DollarSign size={18} />} />
+          <StatTile label="Actual (All-Time)" value={formatCurrency(data.revenue.actualAllTime)} />
+          <StatTile label="Projected (Monthly)" value={formatCurrency(data.revenue.totalMonthly)} />
+        </div>
+        <ChartCard
+          title="Actual revenue by month"
+          description="Logged revenue vs. the current projected monthly figure (dashed line), last 6 months"
+        >
+          <RevenueTrendChart data={data.revenue.actualByMonth} projected={data.revenue.totalMonthly} />
+        </ChartCard>
+      </div>
+
+      <div className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          Log Revenue
+        </h2>
+        <RevenueLedger accounts={data.wonAccounts} entries={data.revenue.entries} />
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
