@@ -7,6 +7,7 @@ import { Badge, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
 import HealthTierSelect from "@/components/HealthTierSelect";
 import { HEALTH_TIERS, type HealthTierValue } from "@/lib/accountHealth";
 import { VOLUME_TIERS, volumeTierInfo } from "@/lib/volumeTier";
+import { isRelationshipChecklistComplete } from "@/lib/relationshipChecklist";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
@@ -71,7 +72,7 @@ export default async function AccountManagementPage({
       contacts: { where: { isDecisionMaker: true }, take: 1 },
       reminders: { where: { completedAt: null }, orderBy: { dueAt: "asc" }, take: 1 },
     },
-    orderBy: { closedAt: "desc" },
+    orderBy: [{ contractSignedAt: { sort: "desc", nulls: "last" } }, { closedAt: "desc" }],
   });
 
   const totalJobsPerMonth = accounts.reduce((sum, a) => sum + (a.jobsPerMonth ?? 0), 0);
@@ -82,7 +83,7 @@ export default async function AccountManagementPage({
     <div>
       <PageHeader
         title="Account Management"
-        description="Won accounts and the relationships you're maintaining with them."
+        description="Won accounts and the relationships you're maintaining with them. Organized by date their service agreement was signed — shaded rows have a completed Relationship Management checklist."
       />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -170,6 +171,7 @@ export default async function AccountManagementPage({
                 <th className="px-4 py-3 font-medium">Volume</th>
                 <th className="px-4 py-3 font-medium">Price/HL-HG</th>
                 <th className="px-4 py-3 font-medium">Projected value</th>
+                <th className="px-4 py-3 font-medium">Signed</th>
                 <th className="px-4 py-3 font-medium">Won</th>
                 <th className="px-4 py-3 font-medium">Next reminder</th>
               </tr>
@@ -183,8 +185,16 @@ export default async function AccountManagementPage({
                     ? account.jobsPerMonth * account.pricePerHl
                     : null;
                 const keyContact = account.contacts[0];
+                const checklistComplete = isRelationshipChecklistComplete(account);
                 return (
-                  <tr key={account.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+                  <tr
+                    key={account.id}
+                    className={clsx(
+                      checklistComplete
+                        ? "bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/30"
+                        : "hover:bg-zinc-50 dark:hover:bg-zinc-900/50",
+                    )}
+                  >
                     <td className="px-4 py-3">
                       <Link
                         href={`/companies/${account.id}`}
@@ -243,6 +253,9 @@ export default async function AccountManagementPage({
                     </td>
                     <td className="px-4 py-3">
                       {projectedValue != null ? formatCurrency(projectedValue) : <span className="text-zinc-400">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                      {account.contractSignedAt ? format(account.contractSignedAt, "PP") : <span className="text-zinc-400">—</span>}
                     </td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                       {account.closedAt ? formatDistanceToNow(account.closedAt, { addSuffix: true }) : "—"}
