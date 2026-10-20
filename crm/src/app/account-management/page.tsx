@@ -83,7 +83,7 @@ export default async function AccountManagementPage({
     <div>
       <PageHeader
         title="Account Management"
-        description="Won accounts and the relationships you're maintaining with them. Organized by date their service agreement was signed — shaded rows have a completed Relationship Management checklist."
+        description="Won accounts and the relationships you're maintaining with them. Organized by date their service agreement was signed — amber rows have a completed Relationship Management checklist, red rows have an expired contract."
       />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -184,13 +184,16 @@ export default async function AccountManagementPage({
                     : null;
                 const keyContact = account.contacts[0];
                 const checklistComplete = isRelationshipChecklistComplete(account);
+                const contractExpired = !!account.contractDate && isPast(account.contractDate);
                 return (
                   <tr
                     key={account.id}
                     className={clsx(
-                      checklistComplete
-                        ? "bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/30"
-                        : "hover:bg-zinc-50 dark:hover:bg-zinc-900/50",
+                      contractExpired
+                        ? "bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/30"
+                        : checklistComplete
+                          ? "bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/30"
+                          : "hover:bg-zinc-50 dark:hover:bg-zinc-900/50",
                     )}
                   >
                     <td className="px-4 py-3">
