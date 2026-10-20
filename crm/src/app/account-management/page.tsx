@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { Badge, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
 import HealthTierSelect from "@/components/HealthTierSelect";
 import { HEALTH_TIERS, type HealthTierValue } from "@/lib/accountHealth";
-import { VOLUME_TIERS, volumeTierInfo } from "@/lib/volumeTier";
+import { VOLUME_TIERS } from "@/lib/volumeTier";
 import { isRelationshipChecklistComplete } from "@/lib/relationshipChecklist";
 
 function formatCurrency(value: number) {
@@ -167,11 +167,9 @@ export default async function AccountManagementPage({
                 <th className="px-4 py-3 font-medium">Health</th>
                 <th className="px-4 py-3 font-medium">Key Contact</th>
                 <th className="px-4 py-3 font-medium">Contact info</th>
-                <th className="px-4 py-3 font-medium">Jobs/mo</th>
-                <th className="px-4 py-3 font-medium">Volume</th>
+                <th className="px-4 py-3 font-medium">Contract Signed</th>
                 <th className="px-4 py-3 font-medium">Price/HL-HG</th>
                 <th className="px-4 py-3 font-medium">Projected value</th>
-                <th className="px-4 py-3 font-medium">Signed</th>
                 <th className="px-4 py-3 font-medium">Won</th>
                 <th className="px-4 py-3 font-medium">Next reminder</th>
               </tr>
@@ -234,17 +232,18 @@ export default async function AccountManagementPage({
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {account.jobsPerMonth != null ? account.jobsPerMonth : <span className="text-zinc-400">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {(() => {
-                        const info = volumeTierInfo(account.jobsPerMonth);
-                        return info ? (
-                          <Badge className={info.badge}>{info.label}</Badge>
-                        ) : (
-                          <span className="text-zinc-400">—</span>
-                        );
-                      })()}
+                      {account.contractSignedAt ? (
+                        <div>
+                          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                            Signed
+                          </Badge>
+                          <p className="mt-1 text-xs text-zinc-400">{format(account.contractSignedAt, "PP")}</p>
+                        </div>
+                      ) : (
+                        <Badge className="bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                          Not Signed
+                        </Badge>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       {account.pricePerHl != null ? formatCurrency(account.pricePerHl) : (
@@ -253,9 +252,6 @@ export default async function AccountManagementPage({
                     </td>
                     <td className="px-4 py-3">
                       {projectedValue != null ? formatCurrency(projectedValue) : <span className="text-zinc-400">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
-                      {account.contractSignedAt ? format(account.contractSignedAt, "PP") : <span className="text-zinc-400">—</span>}
                     </td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                       {account.closedAt ? formatDistanceToNow(account.closedAt, { addSuffix: true }) : "—"}
