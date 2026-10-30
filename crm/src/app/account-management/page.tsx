@@ -8,6 +8,8 @@ import HealthTierSelect from "@/components/HealthTierSelect";
 import { HEALTH_TIERS, type HealthTierValue } from "@/lib/accountHealth";
 import { VOLUME_TIERS } from "@/lib/volumeTier";
 import { isRelationshipChecklistComplete } from "@/lib/relationshipChecklist";
+import { parseAccountSort } from "@/lib/accountSort";
+import AccountSortSelect from "@/components/AccountSortSelect";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
@@ -40,9 +42,9 @@ function volumeWhere(volume: VolumeFilter) {
 export default async function AccountManagementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; health?: string; volume?: string }>;
+  searchParams: Promise<{ q?: string; health?: string; volume?: string; sort?: string }>;
 }) {
-  const { q, health: healthParam, volume: volumeParam } = await searchParams;
+  const { q, health: healthParam, volume: volumeParam, sort: sortParam } = await searchParams;
   const query = q?.trim() ?? "";
   const health: HealthFilter = HEALTH_FILTERS.some((f) => f.value === healthParam)
     ? (healthParam as HealthFilter)
@@ -50,6 +52,16 @@ export default async function AccountManagementPage({
   const volume: VolumeFilter = VOLUME_FILTERS.some((f) => f.value === volumeParam)
     ? (volumeParam as VolumeFilter)
     : "all";
+  const sort = parseAccountSort(sortParam);
+
+  const orderBy =
+    sort === "expires"
+      ? [{ contractDate: { sort: "asc" as const, nulls: "last" as const } }]
+      : sort === "won"
+        ? [{ closedAt: "desc" as const }]
+        : sort === "name"
+          ? [{ name: "asc" as const }]
+          : [{ contractSignedAt: { sort: "desc" as const, nulls: "last" as const } }, { closedAt: "desc" as const }];
 
   const accounts = await prisma.company.findMany({
     where: {
@@ -72,7 +84,7 @@ export default async function AccountManagementPage({
       contacts: { where: { isDecisionMaker: true }, take: 1 },
       reminders: { where: { completedAt: null }, orderBy: { dueAt: "asc" }, take: 1 },
     },
-    orderBy: [{ contractSignedAt: { sort: "desc", nulls: "last" } }, { closedAt: "desc" }],
+    orderBy,
   });
 
   const totalJobsPerMonth = accounts.reduce((sum, a) => sum + (a.jobsPerMonth ?? 0), 0);
@@ -83,7 +95,7 @@ export default async function AccountManagementPage({
     <div>
       <PageHeader
         title="Account Management"
-        description="Won accounts and the relationships you're maintaining with them. Organized by date their service agreement was signed — amber rows have a completed Relationship Management checklist, red rows have an expired contract."
+        description="Won accounts and the relationships you're maintaining with them. Amber rows have a completed Relationship Management checklist, red rows have an expired contract."
       />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -110,6 +122,8 @@ export default async function AccountManagementPage({
         </div>
         <input type="hidden" name="health" value={health} />
         <input type="hidden" name="volume" value={volume} />
+        <input type="hidden" name="sort" value={sort} />
+        <AccountSortSelect value={sort} />
       </form>
 
       <div className="mb-4 space-y-2">
@@ -118,7 +132,7 @@ export default async function AccountManagementPage({
           {HEALTH_FILTERS.map((filter) => (
             <Link
               key={filter.value}
-              href={`/account-management?${new URLSearchParams({ ...(query ? { q: query } : {}), health: filter.value, volume }).toString()}`}
+              href={`/account-management?${new URLSearchParams({ ...(query ? { q: query } : {}), health: filter.value, volume, sort }).toString()}`}
               className={clsx(
                 "rounded-lg px-2.5 py-1.5 text-xs font-medium",
                 health === filter.value
@@ -135,7 +149,7 @@ export default async function AccountManagementPage({
           {VOLUME_FILTERS.map((filter) => (
             <Link
               key={filter.value}
-              href={`/account-management?${new URLSearchParams({ ...(query ? { q: query } : {}), health, volume: filter.value }).toString()}`}
+              href={`/account-management?${new URLSearchParams({ ...(query ? { q: query } : {}), health, volume: filter.value, sort }).toString()}`}
               className={clsx(
                 "rounded-lg px-2.5 py-1.5 text-xs font-medium",
                 volume === filter.value
@@ -168,6 +182,7 @@ export default async function AccountManagementPage({
                 <th className="px-4 py-3 font-medium">Key Contact</th>
                 <th className="px-4 py-3 font-medium">Contact info</th>
                 <th className="px-4 py-3 font-medium">Contract Signed</th>
+                <th className="px-4 py-3 font-medium">Contract Ends</th>
                 <th className="px-4 py-3 font-medium">Price/HL-HG</th>
                 <th className="px-4 py-3 font-medium">Projected value</th>
                 <th className="px-4 py-3 font-medium">Won</th>
@@ -246,6 +261,16 @@ export default async function AccountManagementPage({
                         <Badge className="bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
                           Not Signed
                         </Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {account.contractDate ? (
+                        <span className={clsx("text-xs", contractExpired ? "font-medium text-red-600 dark:text-red-400" : "text-zinc-600 dark:text-zinc-400")}>
+                          {format(account.contractDate, "PP")}
+                          {contractExpired ? " · Expired" : ""}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-zinc-400">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
