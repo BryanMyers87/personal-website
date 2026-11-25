@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { getAnalytics } from "@/lib/analytics";
-import { getPortfolioMonthlyLeads, getTopHvacContractorsAllTime } from "@/lib/leadStats";
+import { getPortfolioMonthlyLeads, getTopHvacContractorsAllTime, getHvacContractorMonthlySeries } from "@/lib/leadStats";
 import { Badge, Card, ChartCard, PageHeader } from "@/components/ui";
 import FunnelChart from "@/components/charts/FunnelChart";
 import SourceBarChart from "@/components/charts/SourceBarChart";
 import LeadTrendChart from "@/components/charts/LeadTrendChart";
+import HvacLeadsLineChart from "@/components/charts/HvacLeadsLineChart";
 import { healthTierInfo, type HealthTierValue } from "@/lib/accountHealth";
 
 // This dashboard reads live data on every request; it must never be served
@@ -20,10 +21,11 @@ function formatPercent(value: number) {
 }
 
 export default async function AnalyticsPage() {
-  const [data, monthlyLeads, topHvac] = await Promise.all([
+  const [data, monthlyLeads, topHvac, hvacSeries] = await Promise.all([
     getAnalytics(),
     getPortfolioMonthlyLeads(),
     getTopHvacContractorsAllTime(20),
+    getHvacContractorMonthlySeries(),
   ]);
 
   return (
@@ -52,6 +54,16 @@ export default async function AnalyticsPage() {
             <p className="text-sm text-zinc-500 dark:text-zinc-400">No deals yet.</p>
           ) : (
             <SourceBarChart data={data.dealsBySource} />
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="mb-6">
+        <ChartCard title="HVAC Contractors — Leads by Month" description="This calendar year, one line per contractor">
+          {hvacSeries.contractors.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No HVAC contractors with lead reports yet.</p>
+          ) : (
+            <HvacLeadsLineChart months={hvacSeries.months} contractors={hvacSeries.contractors} />
           )}
         </ChartCard>
       </div>
@@ -99,10 +111,15 @@ export default async function AnalyticsPage() {
 
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          Top 20 Accounts <span className="ml-1 font-normal text-zinc-400">by average monthly value, trailing 12 months of logged revenue</span>
+          Top 20 Accounts{" "}
+          <span className="ml-1 font-normal text-zinc-400">
+            by average monthly value (leads × price per HL/HG), trailing 12 months
+          </span>
         </h2>
         {data.topAccounts.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">No accounts with logged revenue yet.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            No accounts with both lead reports and a price per HL/HG set yet.
+          </p>
         ) : (
           <Card className="overflow-hidden">
             <table className="w-full text-sm">
@@ -111,8 +128,9 @@ export default async function AnalyticsPage() {
                   <th className="px-4 py-3 font-medium">#</th>
                   <th className="px-4 py-3 font-medium">Account</th>
                   <th className="px-4 py-3 font-medium">Health</th>
+                  <th className="px-4 py-3 font-medium">Leads (12mo)</th>
                   <th className="px-4 py-3 font-medium">Avg monthly value</th>
-                  <th className="px-4 py-3 font-medium">Total (12mo)</th>
+                  <th className="px-4 py-3 font-medium">Total value (12mo)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -132,8 +150,9 @@ export default async function AnalyticsPage() {
                       <td className="px-4 py-3">
                         {info ? <Badge className={info.badge}>{info.label}</Badge> : <span className="text-zinc-400">—</span>}
                       </td>
+                      <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{account.leadsTTM}</td>
                       <td className="px-4 py-3 font-medium">{formatCurrency(account.avgMonthlyValue)}</td>
-                      <td className="px-4 py-3">{formatCurrency(account.totalRevenueTTM)}</td>
+                      <td className="px-4 py-3">{formatCurrency(account.totalValue)}</td>
                     </tr>
                   );
                 })}

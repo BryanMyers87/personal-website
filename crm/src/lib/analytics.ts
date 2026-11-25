@@ -30,7 +30,9 @@ function weekBuckets(): { key: string; label: string }[] {
 }
 
 export async function getAnalytics() {
-  const [companyCount, contactCount, deals, historyEntries, revenueEntries] = await Promise.all([
+  const oneYearAgo = subMonths(new Date(), 12);
+
+  const [companyCount, contactCount, deals, historyEntries, leadReportsTTM] = await Promise.all([
     prisma.company.count(),
     prisma.contact.count(),
     prisma.company.findMany({
@@ -52,9 +54,9 @@ export async function getAnalytics() {
       orderBy: { changedAt: "asc" },
       select: { companyId: true, fromStage: true, toStage: true, changedAt: true },
     }),
-    prisma.revenueEntry.findMany({
-      select: { companyId: true, amount: true, receivedAt: true },
-      orderBy: { receivedAt: "desc" },
+    prisma.leadReport.findMany({
+      where: { periodStart: { gte: oneYearAgo } },
+      select: { companyId: true, leads: true },
     }),
   ]);
 
@@ -188,13 +190,11 @@ export async function getAnalytics() {
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count);
 
-  // Trailing-12-months actual revenue per company — the basis for the Top
-  // Accounts ranking.
-  const oneYearAgo = subMonths(new Date(), 12);
-  const revenueByCompanyTTM = new Map<string, number>();
-  for (const entry of revenueEntries) {
-    if (entry.receivedAt < oneYearAgo) continue;
-    revenueByCompanyTTM.set(entry.companyId, (revenueByCompanyTTM.get(entry.companyId) ?? 0) + entry.amount);
+  // Trailing-12-months leads per company — the basis for the Top Accounts
+  // ranking (leads × appointment value, not logged revenue).
+  const leadsByCompanyTTM = new Map<string, number>();
+  for (const report of leadReportsTTM) {
+    leadsByCompanyTTM.set(report.companyId, (leadsByCompanyTTM.get(report.companyId) ?? 0) + report.leads);
   }
 
   // --- Health: relationship-health tier breakdown across won accounts -------
@@ -213,21 +213,22 @@ export async function getAnalytics() {
   }
   const health = { counts: healthCounts, unassigned: healthUnassigned };
 
-  // --- Top accounts: won accounts ranked by actual average monthly value,
-  // computed from logged revenue over the trailing 12 months (not the
-  // manually-input jobs/mo × price/HL projection) ---------------------------
+  // --- Top accounts: won accounts ranked by projected average monthly
+  // value — trailing-12-month leads × price per HL/HG — not logged revenue.
   const topAccounts = wonDeals
     .map((d) => {
-      const totalRevenueTTM = revenueByCompanyTTM.get(d.id) ?? 0;
+      const leadsTTM = leadsByCompanyTTM.get(d.id) ?? 0;
+      const totalValue = leadsTTM * (d.pricePerHl ?? 0);
       return {
         id: d.id,
         name: d.name,
-        avgMonthlyValue: totalRevenueTTM / 12,
-        totalRevenueTTM,
+        leadsTTM,
+        avgMonthlyValue: totalValue / 12,
+        totalValue,
         healthTier: d.healthTier,
       };
     })
-    .filter((a) => a.totalRevenueTTM > 0)
+    .filter((a) => a.totalValue > 0)
     .sort((a, b) => b.avgMonthlyValue - a.avgMonthlyValue)
     .slice(0, TOP_ACCOUNTS_LIMIT);
 

@@ -1,4 +1,4 @@
-import { format, startOfYear, startOfMonth, subWeeks, subDays } from "date-fns";
+import { format, startOfYear, startOfMonth, subWeeks, subDays, addMonths } from "date-fns";
 import { prisma } from "@/lib/prisma";
 
 export type MonthlyLeadDatum = { month: string; leads: number; appsBooked: number };
@@ -106,6 +106,52 @@ export async function getTopHvacContractorsAllTime(limit = 20): Promise<TopHvacC
 
   contractors.sort((a, b) => b.leads - a.leads);
   return contractors.slice(0, limit);
+}
+
+export type HvacContractorSeries = {
+  id: string;
+  name: string;
+  totalLeads: number;
+  leadsByMonth: number[]; // aligned to the months array returned alongside it
+};
+
+// Every HVAC contractor's leads by month for the current calendar year
+// (Jan–Dec), sorted by total leads descending so callers can slice the
+// top N or use the full list.
+export async function getHvacContractorMonthlySeries(): Promise<{ months: string[]; contractors: HvacContractorSeries[] }> {
+  const yearStart = startOfYear(new Date());
+  const months = Array.from({ length: 12 }, (_, i) => format(addMonths(yearStart, i), "MMM"));
+  const monthIndex = new Map(months.map((m, i) => [m, i]));
+
+  const accounts = await prisma.company.findMany({
+    where: { stage: "RELATIONSHIP_MANAGEMENT" },
+    select: {
+      id: true,
+      name: true,
+      industry: true,
+      leadReports: { where: { periodStart: { gte: yearStart } }, select: { periodStart: true, leads: true, industry: true } },
+    },
+  });
+
+  const contractors: HvacContractorSeries[] = [];
+  for (const account of accounts) {
+    if (account.leadReports.length === 0) continue;
+    const industry = account.industry ?? account.leadReports[account.leadReports.length - 1]?.industry ?? "";
+    if (!/hvac/i.test(industry)) continue;
+
+    const leadsByMonth = new Array(12).fill(0);
+    for (const report of account.leadReports) {
+      const idx = monthIndex.get(format(report.periodStart, "MMM"));
+      if (idx !== undefined) leadsByMonth[idx] += report.leads;
+    }
+    const totalLeads = leadsByMonth.reduce((sum, n) => sum + n, 0);
+    if (totalLeads === 0) continue;
+
+    contractors.push({ id: account.id, name: account.name, totalLeads, leadsByMonth });
+  }
+
+  contractors.sort((a, b) => b.totalLeads - a.totalLeads);
+  return { months, contractors };
 }
 
 export type GoneQuietAccount = {
