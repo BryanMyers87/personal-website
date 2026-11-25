@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { format } from "date-fns";
 import { Card, PageHeader } from "@/components/ui";
 import LeadUploadForm from "@/components/LeadUploadForm";
@@ -18,6 +19,13 @@ export default function LeadUploadPage() {
           defaultPeriodEnd={format(periodEnd, "yyyy-MM-dd")}
         />
       </Card>
+      <p className="mt-4 text-xs text-zinc-400">
+        Backfilling older history instead?{" "}
+        <Link href="/leads/import-history" className="text-indigo-600 hover:underline dark:text-indigo-400">
+          Import Lead History
+        </Link>
+        .
+      </p>
     </div>
   );
 }

@@ -353,20 +353,26 @@ model LeadReportBatch {
 
 // A single parsed row from an uploaded batch, held here until its company
 // is resolved (matched, newly created, or skipped as zero-lead) and the
-// batch is committed.
+// batch is committed. periodStart/periodEnd/granularity are only set for
+// a history-import batch, where every row can cover a different period;
+// a weekly-upload batch leaves them null and falls back to the batch's
+// own single period instead.
 model LeadReportRow {
-  id                 String          @id @default(cuid())
+  id                 String           @id @default(cuid())
   batchId            String
-  batch              LeadReportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch              LeadReportBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
   rawCompanyName     String
   industry           String?
   leads              Int
   appsBooked         Int
   billedToContractor Int
   dnq                Int
+  periodStart        DateTime?
+  periodEnd          DateTime?
+  granularity        LeadGranularity?
   status             LeadRowStatus
   companyId          String?
-  company            Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  company            Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
   createdAt          DateTime        @default(now())
 
   @@index([batchId])
