@@ -56,7 +56,7 @@ export async function getAnalytics() {
     }),
     prisma.leadReport.findMany({
       where: { periodStart: { gte: oneYearAgo } },
-      select: { companyId: true, leads: true },
+      select: { companyId: true, appsBooked: true },
     }),
   ]);
 
@@ -190,11 +190,11 @@ export async function getAnalytics() {
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count);
 
-  // Trailing-12-months leads per company — the basis for the Top Accounts
-  // ranking (leads × appointment value, not logged revenue).
-  const leadsByCompanyTTM = new Map<string, number>();
+  // Trailing-12-months apps booked per company — the basis for the Top
+  // Accounts ranking (apps booked × appointment value, not logged revenue).
+  const appsBookedByCompanyTTM = new Map<string, number>();
   for (const report of leadReportsTTM) {
-    leadsByCompanyTTM.set(report.companyId, (leadsByCompanyTTM.get(report.companyId) ?? 0) + report.leads);
+    appsBookedByCompanyTTM.set(report.companyId, (appsBookedByCompanyTTM.get(report.companyId) ?? 0) + report.appsBooked);
   }
 
   // --- Health: relationship-health tier breakdown across won accounts -------
@@ -214,15 +214,16 @@ export async function getAnalytics() {
   const health = { counts: healthCounts, unassigned: healthUnassigned };
 
   // --- Top accounts: won accounts ranked by projected average monthly
-  // value — trailing-12-month leads × price per HL/HG — not logged revenue.
+  // value — trailing-12-month apps booked × price per HL/HG — not logged
+  // revenue.
   const topAccounts = wonDeals
     .map((d) => {
-      const leadsTTM = leadsByCompanyTTM.get(d.id) ?? 0;
-      const totalValue = leadsTTM * (d.pricePerHl ?? 0);
+      const appsBookedTTM = appsBookedByCompanyTTM.get(d.id) ?? 0;
+      const totalValue = appsBookedTTM * (d.pricePerHl ?? 0);
       return {
         id: d.id,
         name: d.name,
-        leadsTTM,
+        appsBookedTTM,
         avgMonthlyValue: totalValue / 12,
         totalValue,
         healthTier: d.healthTier,

@@ -155,7 +155,7 @@ export default async function AnalyticsPage() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
           Top 20 Accounts{" "}
           <span className="ml-1 font-normal text-zinc-400">
-            by average monthly value (leads × price per HL/HG), trailing 12 months
+            by average monthly value (apps booked × price per HL/HG), trailing 12 months
           </span>
         </h2>
         {data.topAccounts.length === 0 ? (
@@ -170,7 +170,7 @@ export default async function AnalyticsPage() {
                   <th className="px-4 py-3 font-medium">#</th>
                   <th className="px-4 py-3 font-medium">Account</th>
                   <th className="px-4 py-3 font-medium">Health</th>
-                  <th className="px-4 py-3 font-medium">Leads (12mo)</th>
+                  <th className="px-4 py-3 font-medium">Apps Booked (12mo)</th>
                   <th className="px-4 py-3 font-medium">Avg monthly value</th>
                   <th className="px-4 py-3 font-medium">Total value (12mo)</th>
                 </tr>
@@ -192,7 +192,7 @@ export default async function AnalyticsPage() {
                       <td className="px-4 py-3">
                         {info ? <Badge className={info.badge}>{info.label}</Badge> : <span className="text-zinc-400">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{account.leadsTTM}</td>
+                      <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{account.appsBookedTTM}</td>
                       <td className="px-4 py-3 font-medium">{formatCurrency(account.avgMonthlyValue)}</td>
                       <td className="px-4 py-3">{formatCurrency(account.totalValue)}</td>
                     </tr>
