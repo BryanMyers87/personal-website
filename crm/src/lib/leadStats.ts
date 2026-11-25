@@ -1,4 +1,4 @@
-import { format, startOfYear, startOfMonth, subWeeks, subDays, addMonths } from "date-fns";
+import { format, startOfYear, startOfMonth, startOfWeek, subWeeks, subDays, addMonths } from "date-fns";
 import { prisma } from "@/lib/prisma";
 
 export type MonthlyLeadDatum = { month: string; leads: number; appsBooked: number };
@@ -108,20 +108,21 @@ export async function getTopHvacContractorsAllTime(limit = 20): Promise<TopHvacC
   return contractors.slice(0, limit);
 }
 
-export type HvacContractorSeries = {
+export type ContractorLeadSeries = {
   id: string;
   name: string;
   totalLeads: number;
-  leadsByMonth: number[]; // aligned to the months array returned alongside it
+  leadsByPeriod: number[]; // aligned to the periods array returned alongside it
 };
 
-// Every HVAC contractor's leads by month for the current calendar year
+// Every contractor's leads by month for the current calendar year
 // (Jan–Dec), sorted by total leads descending so callers can slice the
-// top N or use the full list.
-export async function getHvacContractorMonthlySeries(): Promise<{ months: string[]; contractors: HvacContractorSeries[] }> {
+// top N or use the full list. hvacOnly restricts to HVAC-industry
+// contractors; otherwise every contractor with lead data is included.
+async function getContractorMonthlySeries(hvacOnly: boolean): Promise<{ periods: string[]; contractors: ContractorLeadSeries[] }> {
   const yearStart = startOfYear(new Date());
-  const months = Array.from({ length: 12 }, (_, i) => format(addMonths(yearStart, i), "MMM"));
-  const monthIndex = new Map(months.map((m, i) => [m, i]));
+  const periods = Array.from({ length: 12 }, (_, i) => format(addMonths(yearStart, i), "MMM"));
+  const periodIndex = new Map(periods.map((m, i) => [m, i]));
 
   const accounts = await prisma.company.findMany({
     where: { stage: "RELATIONSHIP_MANAGEMENT" },
@@ -133,25 +134,79 @@ export async function getHvacContractorMonthlySeries(): Promise<{ months: string
     },
   });
 
-  const contractors: HvacContractorSeries[] = [];
+  const contractors: ContractorLeadSeries[] = [];
   for (const account of accounts) {
     if (account.leadReports.length === 0) continue;
-    const industry = account.industry ?? account.leadReports[account.leadReports.length - 1]?.industry ?? "";
-    if (!/hvac/i.test(industry)) continue;
-
-    const leadsByMonth = new Array(12).fill(0);
-    for (const report of account.leadReports) {
-      const idx = monthIndex.get(format(report.periodStart, "MMM"));
-      if (idx !== undefined) leadsByMonth[idx] += report.leads;
+    if (hvacOnly) {
+      const industry = account.industry ?? account.leadReports[account.leadReports.length - 1]?.industry ?? "";
+      if (!/hvac/i.test(industry)) continue;
     }
-    const totalLeads = leadsByMonth.reduce((sum, n) => sum + n, 0);
+
+    const leadsByPeriod = new Array(periods.length).fill(0);
+    for (const report of account.leadReports) {
+      const idx = periodIndex.get(format(report.periodStart, "MMM"));
+      if (idx !== undefined) leadsByPeriod[idx] += report.leads;
+    }
+    const totalLeads = leadsByPeriod.reduce((sum, n) => sum + n, 0);
     if (totalLeads === 0) continue;
 
-    contractors.push({ id: account.id, name: account.name, totalLeads, leadsByMonth });
+    contractors.push({ id: account.id, name: account.name, totalLeads, leadsByPeriod });
   }
 
   contractors.sort((a, b) => b.totalLeads - a.totalLeads);
-  return { months, contractors };
+  return { periods, contractors };
+}
+
+export function getHvacContractorMonthlySeries(): Promise<{ periods: string[]; contractors: ContractorLeadSeries[] }> {
+  return getContractorMonthlySeries(true);
+}
+
+export function getContractorMonthlyLeadSeries(): Promise<{ periods: string[]; contractors: ContractorLeadSeries[] }> {
+  return getContractorMonthlySeries(false);
+}
+
+const WEEKLY_SERIES_WEEKS = 12;
+
+// Every contractor's leads by week, for the trailing 12 weeks. A monthly
+// history row lands entirely in the week containing its period start.
+export async function getContractorWeeklyLeadSeries(): Promise<{ periods: string[]; contractors: ContractorLeadSeries[] }> {
+  const now = new Date();
+  const weekStarts: Date[] = [];
+  const periods: string[] = [];
+  for (let i = WEEKLY_SERIES_WEEKS - 1; i >= 0; i--) {
+    const weekStart = startOfWeek(subWeeks(now, i), { weekStartsOn: 1 });
+    weekStarts.push(weekStart);
+    periods.push(format(weekStart, "MMM d"));
+  }
+  const weekIndex = new Map(weekStarts.map((w, i) => [w.getTime(), i]));
+
+  const accounts = await prisma.company.findMany({
+    where: { stage: "RELATIONSHIP_MANAGEMENT" },
+    select: {
+      id: true,
+      name: true,
+      leadReports: { where: { periodStart: { gte: weekStarts[0] } }, select: { periodStart: true, leads: true } },
+    },
+  });
+
+  const contractors: ContractorLeadSeries[] = [];
+  for (const account of accounts) {
+    if (account.leadReports.length === 0) continue;
+
+    const leadsByPeriod = new Array(periods.length).fill(0);
+    for (const report of account.leadReports) {
+      const bucketStart = startOfWeek(report.periodStart, { weekStartsOn: 1 }).getTime();
+      const idx = weekIndex.get(bucketStart);
+      if (idx !== undefined) leadsByPeriod[idx] += report.leads;
+    }
+    const totalLeads = leadsByPeriod.reduce((sum, n) => sum + n, 0);
+    if (totalLeads === 0) continue;
+
+    contractors.push({ id: account.id, name: account.name, totalLeads, leadsByPeriod });
+  }
+
+  contractors.sort((a, b) => b.totalLeads - a.totalLeads);
+  return { periods, contractors };
 }
 
 export type GoneQuietAccount = {

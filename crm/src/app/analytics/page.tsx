@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { getAnalytics } from "@/lib/analytics";
-import { getPortfolioMonthlyLeads, getTopHvacContractorsAllTime, getHvacContractorMonthlySeries } from "@/lib/leadStats";
+import {
+  getPortfolioMonthlyLeads,
+  getTopHvacContractorsAllTime,
+  getHvacContractorMonthlySeries,
+  getContractorMonthlyLeadSeries,
+  getContractorWeeklyLeadSeries,
+} from "@/lib/leadStats";
 import { Badge, Card, ChartCard, PageHeader } from "@/components/ui";
 import FunnelChart from "@/components/charts/FunnelChart";
 import SourceBarChart from "@/components/charts/SourceBarChart";
 import LeadTrendChart from "@/components/charts/LeadTrendChart";
-import HvacLeadsLineChart from "@/components/charts/HvacLeadsLineChart";
+import ContractorsLineChart from "@/components/charts/ContractorsLineChart";
 import { healthTierInfo, type HealthTierValue } from "@/lib/accountHealth";
 
 // This dashboard reads live data on every request; it must never be served
@@ -21,11 +27,13 @@ function formatPercent(value: number) {
 }
 
 export default async function AnalyticsPage() {
-  const [data, monthlyLeads, topHvac, hvacSeries] = await Promise.all([
+  const [data, monthlyLeads, topHvac, hvacSeries, contractorMonthlySeries, contractorWeeklySeries] = await Promise.all([
     getAnalytics(),
     getPortfolioMonthlyLeads(),
     getTopHvacContractorsAllTime(20),
     getHvacContractorMonthlySeries(),
+    getContractorMonthlyLeadSeries(),
+    getContractorWeeklyLeadSeries(),
   ]);
 
   return (
@@ -63,7 +71,41 @@ export default async function AnalyticsPage() {
           {hvacSeries.contractors.length === 0 ? (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">No HVAC contractors with lead reports yet.</p>
           ) : (
-            <HvacLeadsLineChart months={hvacSeries.months} contractors={hvacSeries.contractors} />
+            <ContractorsLineChart periods={hvacSeries.periods} contractors={hvacSeries.contractors} allLabel="All HVAC" />
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="mb-6">
+        <ChartCard
+          title="Contractors — Leads by Week"
+          description="Trailing 12 weeks, every contractor, one line each — see who picked up or dropped off week to week"
+        >
+          {contractorWeeklySeries.contractors.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No lead reports logged yet.</p>
+          ) : (
+            <ContractorsLineChart
+              periods={contractorWeeklySeries.periods}
+              contractors={contractorWeeklySeries.contractors}
+              allLabel="All Contractors"
+            />
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="mb-6">
+        <ChartCard
+          title="Contractors — Leads by Month"
+          description="This calendar year, every contractor, one line each"
+        >
+          {contractorMonthlySeries.contractors.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No lead reports logged yet.</p>
+          ) : (
+            <ContractorsLineChart
+              periods={contractorMonthlySeries.periods}
+              contractors={contractorMonthlySeries.contractors}
+              allLabel="All Contractors"
+            />
           )}
         </ChartCard>
       </div>

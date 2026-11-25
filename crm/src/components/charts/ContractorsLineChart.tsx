@@ -4,14 +4,16 @@ import { useMemo, useState } from "react";
 import { clsx } from "clsx";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useChartTheme, CATEGORICAL } from "./theme";
-import type { HvacContractorSeries } from "@/lib/leadStats";
+import type { ContractorLeadSeries } from "@/lib/leadStats";
 
-export default function HvacLeadsLineChart({
-  months,
+export default function ContractorsLineChart({
+  periods,
   contractors,
+  allLabel = "All",
 }: {
-  months: string[];
-  contractors: HvacContractorSeries[];
+  periods: string[];
+  contractors: ContractorLeadSeries[];
+  allLabel?: string;
 }) {
   const theme = useChartTheme();
   const palette = theme.isDark ? CATEGORICAL.dark : CATEGORICAL.light;
@@ -21,12 +23,12 @@ export default function HvacLeadsLineChart({
 
   const data = useMemo(
     () =>
-      months.map((month, i) => {
-        const row: Record<string, string | number> = { month };
-        for (const c of visible) row[c.name] = c.leadsByMonth[i];
+      periods.map((period, i) => {
+        const row: Record<string, string | number> = { period };
+        for (const c of visible) row[c.name] = c.leadsByPeriod[i];
         return row;
       }),
-    [months, visible],
+    [periods, visible],
   );
 
   return (
@@ -54,13 +56,13 @@ export default function HvacLeadsLineChart({
               : "border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800",
           )}
         >
-          All HVAC ({contractors.length})
+          {allLabel} ({contractors.length})
         </button>
       </div>
-      <ResponsiveContainer width="100%" height={380}>
+      <ResponsiveContainer width="100%" height={640}>
         <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={theme.grid} />
-          <XAxis dataKey="month" tick={{ fill: theme.axis, fontSize: 11 }} axisLine={{ stroke: theme.grid }} tickLine={false} />
+          <XAxis dataKey="period" tick={{ fill: theme.axis, fontSize: 11 }} axisLine={{ stroke: theme.grid }} tickLine={false} />
           <YAxis allowDecimals={false} tick={{ fill: theme.axis, fontSize: 11 }} axisLine={false} tickLine={false} width={32} />
           <Tooltip
             contentStyle={{
