@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { importCommunications, type ImportCommunicationsState } from "@/actions/communicationImport";
 import { Button } from "@/components/ui";
 
@@ -26,7 +27,14 @@ export default function ImportCommunicationsForm() {
           </p>
           <ul className="mt-1 list-disc pl-4">
             <li>{state.summary.matched} logged to a matching company</li>
-            <li>{state.summary.skippedUnmatched} skipped — no matching contact or company phone number</li>
+            <li>
+              {state.summary.needsReview} number{state.summary.needsReview === 1 ? "" : "s"} need
+              {state.summary.needsReview === 1 ? "s" : ""} matching —{" "}
+              <Link href="/journal/unmatched-numbers" className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                review them here
+              </Link>
+            </li>
+            <li>{state.summary.ignored} from numbers you&apos;ve already marked ignored</li>
             <li>{state.summary.skippedAlreadyImported} already imported from a previous upload</li>
             {state.summary.skippedNoise > 0 && <li>{state.summary.skippedNoise} skipped (drafts/unsent)</li>}
           </ul>

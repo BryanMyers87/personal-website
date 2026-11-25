@@ -70,26 +70,76 @@ export function callTypeLabel(type: number): string {
   return CALL_TYPE_LABELS[type] ?? "Call";
 }
 
+export function callSummary(type: number, duration: number): string {
+  const minutes = Math.round(duration / 60);
+  return `${callTypeLabel(type)} · ${duration < 60 ? `${duration}s` : `${minutes}m`}`;
+}
+
+export function textSummary(type: number, body: string): string {
+  const direction = type === 2 ? "Sent" : "Received";
+  const snippet = body.length > 300 ? `${body.slice(0, 300)}…` : body;
+  return `${direction} text: ${snippet}`;
+}
+
+// Prefixes a summary with who it was with, once known — composable at
+// initial-match time or later, when a previously-unmatched number gets
+// resolved to a contact.
+export function attributeSummary(summary: string, contactName: string | null): string {
+  return contactName ? `${contactName} — ${summary}` : summary;
+}
+
 // SMS type 3/4/6 = draft/outbox/queued — never actually sent or received,
-// so they're not real communication events worth logging.
+// so they're not real communication events worth logging or reviewing.
 export const SKIP_SMS_TYPES = new Set([3, 4, 6]);
 
-export async function buildPhoneMatchIndex(): Promise<Map<string, string>> {
-  const [companies, contacts] = await Promise.all([
+export type PhoneMatch = { companyId: string; contactId: string | null; contactName: string | null };
+
+export async function buildPhoneMatchIndex(): Promise<Map<string, PhoneMatch>> {
+  const [companies, contacts, aliases] = await Promise.all([
     prisma.company.findMany({ where: { phone: { not: null } }, select: { id: true, phone: true } }),
-    prisma.contact.findMany({ where: { phone: { not: null } }, select: { phone: true, companyId: true } }),
+    prisma.contact.findMany({
+      where: { phone: { not: null } },
+      select: { id: true, firstName: true, lastName: true, phone: true, companyId: true },
+    }),
+    prisma.phoneAlias.findMany({
+      select: { phone: true, companyId: true, contactId: true, contact: { select: { firstName: true, lastName: true } } },
+    }),
   ]);
 
-  const index = new Map<string, string>();
+  const index = new Map<string, PhoneMatch>();
+
+  // Priority, low to high (later entries overwrite earlier ones): company
+  // main line, then a contact's own line, then a resolved PhoneAlias —
+  // aliases win since they were deliberately assigned by a human.
   for (const company of companies) {
     const normalized = company.phone ? normalizePhoneNumber(company.phone) : null;
-    if (normalized) index.set(normalized, company.id);
+    if (normalized) index.set(normalized, { companyId: company.id, contactId: null, contactName: null });
   }
-  // Contacts are indexed after companies so a contact's direct line wins
-  // over the company's main line when both happen to be set.
   for (const contact of contacts) {
     const normalized = contact.phone ? normalizePhoneNumber(contact.phone) : null;
-    if (normalized) index.set(normalized, contact.companyId);
+    if (normalized) {
+      index.set(normalized, {
+        companyId: contact.companyId,
+        contactId: contact.id,
+        contactName: `${contact.firstName} ${contact.lastName}`.trim(),
+      });
+    }
   }
+  for (const alias of aliases) {
+    const normalized = normalizePhoneNumber(alias.phone);
+    if (normalized) {
+      index.set(normalized, {
+        companyId: alias.companyId,
+        contactId: alias.contactId,
+        contactName: alias.contact ? `${alias.contact.firstName} ${alias.contact.lastName}`.trim() : null,
+      });
+    }
+  }
+
   return index;
+}
+
+export async function buildIgnoredNumberSet(): Promise<Set<string>> {
+  const ignored = await prisma.ignoredPhoneNumber.findMany({ select: { phone: true } });
+  return new Set(ignored.map((i) => i.phone));
 }
