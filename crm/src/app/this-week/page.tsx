@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { startOfDay, endOfDay, addDays, startOfWeek, formatDistanceToNow } from "date-fns";
-import { AlertTriangle, History, Mail, Phone } from "lucide-react";
+import { AlertTriangle, History, Mail, Phone, Trophy, VolumeX } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Badge, Card, PageHeader, StatTile } from "@/components/ui";
 import ReminderRow, { type ReminderRowData } from "@/components/ReminderRow";
@@ -8,6 +8,7 @@ import HitListStatusSelect from "@/components/HitListStatusSelect";
 import TodoList from "@/components/TodoList";
 import WeeklyActivityTracker from "@/components/WeeklyActivityTracker";
 import { healthTierInfo, type HealthTierValue } from "@/lib/accountHealth";
+import { getLeadDashboardStats } from "@/lib/leadStats";
 
 // The daily to-do list — always live, never a stale build-time snapshot.
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export default async function ThisWeekPage() {
   const todayStart = startOfDay(now);
   const weekEnd = endOfDay(addDays(now, 7));
 
-  const [overdueReminders, thisWeekReminders, atRiskAccounts, hitListFollowUps, todos, weeklyActivity] =
+  const [overdueReminders, thisWeekReminders, atRiskAccounts, hitListFollowUps, todos, weeklyActivity, leadStats] =
     await Promise.all([
       prisma.reminder.findMany({
         where: { completedAt: null, dueAt: { lt: todayStart } },
@@ -46,6 +47,7 @@ export default async function ThisWeekPage() {
       prisma.weeklyActivity.findUnique({
         where: { weekStart: startOfWeek(now, { weekStartsOn: 1 }) },
       }),
+      getLeadDashboardStats(),
     ]);
 
   const activityCounts = {
@@ -210,6 +212,63 @@ export default async function ThisWeekPage() {
                       </div>
                     </div>
                     <HitListStatusSelect id={entry.id} status={entry.outreachStatus} />
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Gone Quiet <span className="ml-1 font-normal text-zinc-400">({leadStats.goneQuiet.length})</span>
+          </h2>
+          <p className="mb-3 text-xs text-zinc-400">Had leads before, but none in the last 4 weeks.</p>
+          {leadStats.goneQuiet.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No accounts have gone quiet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {leadStats.goneQuiet.map((account) => (
+                <li key={account.id}>
+                  <Card className="flex items-center justify-between gap-3 p-3">
+                    <div className="flex items-center gap-2">
+                      <VolumeX size={15} className="shrink-0 text-amber-500" />
+                      <Link href={`/companies/${account.id}`} className="text-sm font-medium hover:underline">
+                        {account.name}
+                      </Link>
+                    </div>
+                    <span className="text-xs text-zinc-400">
+                      Last lead {formatDistanceToNow(account.lastLeadDate, { addSuffix: true })}
+                    </span>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Top HVAC Contractors This Month
+          </h2>
+          <p className="mb-3 text-xs text-zinc-400">Ranked by apps booked this month.</p>
+          {leadStats.topHvacThisMonth.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No HVAC bookings yet this month.</p>
+          ) : (
+            <ul className="space-y-2">
+              {leadStats.topHvacThisMonth.map((account, idx) => (
+                <li key={account.id}>
+                  <Card className="flex items-center justify-between gap-3 p-3">
+                    <div className="flex items-center gap-2">
+                      <Trophy size={15} className="shrink-0 text-amber-500" />
+                      <span className="text-xs text-zinc-400">#{idx + 1}</span>
+                      <Link href={`/companies/${account.id}`} className="text-sm font-medium hover:underline">
+                        {account.name}
+                      </Link>
+                    </div>
+                    <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                      {account.appsBooked} booked
+                    </Badge>
                   </Card>
                 </li>
               ))}

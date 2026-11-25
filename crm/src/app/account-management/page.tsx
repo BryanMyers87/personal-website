@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Mail, Phone, Search } from "lucide-react";
+import { Mail, Phone, Search, UploadCloud } from "lucide-react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { clsx } from "clsx";
 import { prisma } from "@/lib/prisma";
-import { Badge, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
+import { Badge, ButtonLink, Card, EmptyState, PageHeader, StatTile } from "@/components/ui";
 import HealthTierSelect from "@/components/HealthTierSelect";
 import { HEALTH_TIERS, type HealthTierValue } from "@/lib/accountHealth";
 import { VOLUME_TIERS } from "@/lib/volumeTier";
@@ -96,6 +96,11 @@ export default async function AccountManagementPage({
       <PageHeader
         title="Account Management"
         description="Won accounts and the relationships you're maintaining with them. Amber rows have a completed Relationship Management checklist, red rows have an expired contract."
+        action={
+          <ButtonLink href="/leads/upload">
+            <UploadCloud size={16} /> Upload Weekly Leads
+          </ButtonLink>
+        }
       />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

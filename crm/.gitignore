@@ -45,3 +45,8 @@ next-env.d.ts
 
 # railway
 .railway
+
+# lead report data — never commit raw lead/CSV data to this (public) repo.
+# All lead data lives in the Railway Postgres database, not in git.
+*.csv
+/data/

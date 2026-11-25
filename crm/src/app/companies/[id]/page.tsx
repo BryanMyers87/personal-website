@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 import { Building2, Calendar, ExternalLink, FileSignature, Globe, Mail, MapPin, Pencil, Phone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { deleteCompany } from "@/actions/companies";
-import { Badge, ButtonLink, Card, PageHeader } from "@/components/ui";
+import { Badge, ButtonLink, Card, ChartCard, PageHeader, StatTile } from "@/components/ui";
 import DeleteButton from "@/components/DeleteButton";
 import DealStageControl from "@/components/DealStageControl";
 import CompanyJournal from "@/components/CompanyJournal";
@@ -16,6 +16,8 @@ import HealthTierSelect from "@/components/HealthTierSelect";
 import ContactList from "@/components/ContactList";
 import { STAGE_LABELS } from "@/lib/stages";
 import { volumeTierInfo } from "@/lib/volumeTier";
+import { getContractorLeadStats } from "@/lib/leadStats";
+import LeadTrendChart from "@/components/charts/LeadTrendChart";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
@@ -36,6 +38,9 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
   });
 
   if (!company) notFound();
+
+  const leadStats = await getContractorLeadStats(company.id);
+  const hasLeadData = leadStats.monthlySeries.length > 0;
 
   const history = company.stageHistory;
   const firstEntry = history[0];
@@ -110,6 +115,26 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
               contractorAppOnboardedAt: company.contractorAppOnboardedAt,
             }}
           />
+        </div>
+      )}
+
+      {hasLeadData && (
+        <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <ChartCard title="Monthly Leads" className="lg:col-span-2">
+            <LeadTrendChart data={leadStats.monthlySeries} />
+          </ChartCard>
+          <div className="grid grid-cols-1 gap-4">
+            <StatTile
+              label="Booking rate (year)"
+              value={`${Math.round(leadStats.yearToDate.rate * 100)}%`}
+              sub={`${leadStats.yearToDate.appsBooked} of ${leadStats.yearToDate.leads} leads`}
+            />
+            <StatTile
+              label="Booking rate (last 60 days)"
+              value={`${Math.round(leadStats.last60Days.rate * 100)}%`}
+              sub={`${leadStats.last60Days.appsBooked} of ${leadStats.last60Days.leads} leads`}
+            />
+          </div>
         </div>
       )}
 

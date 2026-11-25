@@ -46,6 +46,26 @@ enum AccountHealth {
   CRITICAL
 }
 
+// Energuy lead reports were monthly through Aug 2026, weekly from Sep on.
+enum LeadGranularity {
+  MONTH
+  WEEK
+}
+
+// Where a lead-report batch came from.
+enum LeadImportSource {
+  ONE_TIME_IMPORT
+  WEEKLY_UPLOAD
+}
+
+// A staged lead-report row's resolution state, before it becomes a
+// committed LeadReport.
+enum LeadRowStatus {
+  MATCHED
+  UNMATCHED
+  SKIPPED_ZERO
+}
+
 // A company IS the deal: every company carries its own pipeline stage,
 // status, and deal metadata. Contacts are the people who work there.
 model Company {
@@ -117,6 +137,9 @@ model Company {
   reminders       Reminder[]
   onboardingFiles OnboardingFile[]
   revenueEntries  RevenueEntry[]
+  leadReports     LeadReport[]
+  leadReportRows  LeadReportRow[]
+  aliases         CompanyAlias[]
 
   @@index([stage])
 }
@@ -282,4 +305,82 @@ model RevenueEntry {
 
   @@index([companyId])
   @@index([receivedAt])
+}
+
+// A committed lead-report fact row for one contractor over one period —
+// sourced from Energuy's lead reports (monthly through Aug 2026, weekly
+// after). Upserted on (companyId, periodStart, periodEnd) so re-uploading
+// the same period never creates a duplicate.
+model LeadReport {
+  id                 String           @id @default(cuid())
+  companyId          String
+  company            Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  periodStart        DateTime
+  periodEnd          DateTime
+  granularity        LeadGranularity
+  leads              Int
+  appsBooked         Int
+  billedToContractor Int
+  dnq                Int
+  industry           String?
+  batchId            String?
+  batch              LeadReportBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  createdAt          DateTime         @default(now())
+
+  @@unique([companyId, periodStart, periodEnd])
+  @@index([companyId])
+  @@index([periodStart])
+}
+
+// One uploaded lead-report file. Tracked by content hash so re-uploading
+// the same file can be flagged, and holds its rows for review/matching
+// before they're committed into real LeadReport rows.
+model LeadReportBatch {
+  id          String           @id @default(cuid())
+  source      LeadImportSource
+  fileHash    String
+  fileName    String
+  periodStart DateTime
+  periodEnd   DateTime
+  granularity LeadGranularity
+  uploadedAt  DateTime         @default(now())
+  committedAt DateTime?
+  rows        LeadReportRow[]
+  leadReports LeadReport[]
+
+  @@index([fileHash])
+}
+
+// A single parsed row from an uploaded batch, held here until its company
+// is resolved (matched, newly created, or skipped as zero-lead) and the
+// batch is committed.
+model LeadReportRow {
+  id                 String          @id @default(cuid())
+  batchId            String
+  batch              LeadReportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  rawCompanyName     String
+  industry           String?
+  leads              Int
+  appsBooked         Int
+  billedToContractor Int
+  dnq                Int
+  status             LeadRowStatus
+  companyId          String?
+  company            Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdAt          DateTime        @default(now())
+
+  @@index([batchId])
+}
+
+// A name variant for a company (e.g. "Comfort Tech Heating And Cooling
+// Ltd" vs "Comfort Tech Heating & Cooling"), so a lead-report upload using
+// a different spelling matches automatically next time.
+model CompanyAlias {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  alias     String   @unique
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
 }
