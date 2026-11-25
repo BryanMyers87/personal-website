@@ -155,30 +155,35 @@ export async function uploadHistoryBatch(
   redirect(`/leads/upload/${batch.id}`);
 }
 
-export async function matchLeadRow(rowId: string, companyId: string): Promise<void> {
-  const row = await prisma.leadReportRow.update({
-    where: { id: rowId },
+// Resolves every still-unmatched row in this batch sharing the same raw
+// company name in one shot — a history import can carry dozens of rows
+// for the same contractor (one per period), and they all need the same
+// answer, not a separate click apiece.
+export async function matchUnmatchedGroup(batchId: string, rawCompanyName: string, companyId: string): Promise<void> {
+  await prisma.leadReportRow.updateMany({
+    where: { batchId, rawCompanyName, status: LeadRowStatus.UNMATCHED },
     data: { companyId, status: LeadRowStatus.MATCHED },
-    select: { batchId: true, rawCompanyName: true },
   });
 
-  const normalizedAlias = normalizeCompanyName(row.rawCompanyName);
+  const normalizedAlias = normalizeCompanyName(rawCompanyName);
   const existingAlias = await prisma.companyAlias.findUnique({ where: { alias: normalizedAlias } });
   if (!existingAlias) {
     await prisma.companyAlias.create({ data: { companyId, alias: normalizedAlias } }).catch(() => {});
   }
 
-  revalidatePath(`/leads/upload/${row.batchId}`);
+  revalidatePath(`/leads/upload/${batchId}`);
 }
 
-export async function createCompanyForLeadRow(rowId: string): Promise<void> {
-  const row = await prisma.leadReportRow.findUnique({ where: { id: rowId } });
-  if (!row) return;
+export async function createCompanyForUnmatchedGroup(batchId: string, rawCompanyName: string): Promise<void> {
+  const sampleRow = await prisma.leadReportRow.findFirst({
+    where: { batchId, rawCompanyName, status: LeadRowStatus.UNMATCHED },
+  });
+  if (!sampleRow) return;
 
   const company = await prisma.company.create({
     data: {
-      name: row.rawCompanyName,
-      industry: row.industry,
+      name: rawCompanyName,
+      industry: sampleRow.industry,
       stage: DealStage.RELATIONSHIP_MANAGEMENT,
       status: DealStatus.WON,
       closedAt: new Date(),
@@ -186,12 +191,12 @@ export async function createCompanyForLeadRow(rowId: string): Promise<void> {
     },
   });
 
-  await prisma.leadReportRow.update({
-    where: { id: rowId },
+  await prisma.leadReportRow.updateMany({
+    where: { batchId, rawCompanyName, status: LeadRowStatus.UNMATCHED },
     data: { companyId: company.id, status: LeadRowStatus.MATCHED },
   });
 
-  revalidatePath(`/leads/upload/${row.batchId}`);
+  revalidatePath(`/leads/upload/${batchId}`);
   revalidatePath("/companies");
   revalidatePath("/account-management");
 }

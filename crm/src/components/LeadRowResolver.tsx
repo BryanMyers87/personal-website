@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { matchLeadRow, createCompanyForLeadRow } from "@/actions/leadUpload";
+import { matchUnmatchedGroup, createCompanyForUnmatchedGroup } from "@/actions/leadUpload";
 import { Button } from "@/components/ui";
 
 export default function LeadRowResolver({
-  rowId,
+  batchId,
   rawCompanyName,
   companies,
 }: {
-  rowId: string;
+  batchId: string;
   rawCompanyName: string;
   companies: { id: string; name: string }[];
 }) {
@@ -35,7 +35,7 @@ export default function LeadRowResolver({
         type="button"
         variant="secondary"
         disabled={isPending || !selected}
-        onClick={() => startTransition(() => matchLeadRow(rowId, selected))}
+        onClick={() => startTransition(() => matchUnmatchedGroup(batchId, rawCompanyName, selected))}
       >
         Match
       </Button>
@@ -45,7 +45,7 @@ export default function LeadRowResolver({
         disabled={isPending}
         onClick={() => {
           if (!window.confirm(`Create a new company named "${rawCompanyName}"?`)) return;
-          startTransition(() => createCompanyForLeadRow(rowId));
+          startTransition(() => createCompanyForUnmatchedGroup(batchId, rawCompanyName));
         }}
       >
         Create new company
