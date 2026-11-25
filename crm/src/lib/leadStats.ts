@@ -51,6 +51,63 @@ export async function getContractorLeadStats(companyId: string): Promise<Contrac
   };
 }
 
+export async function getPortfolioMonthlyLeads(): Promise<MonthlyLeadDatum[]> {
+  const reports = await prisma.leadReport.findMany({
+    orderBy: { periodStart: "asc" },
+    select: { periodStart: true, leads: true, appsBooked: true },
+  });
+
+  const byMonth = new Map<string, MonthlyLeadDatum>();
+  for (const report of reports) {
+    const key = format(report.periodStart, "MMM yyyy");
+    const existing = byMonth.get(key);
+    if (existing) {
+      existing.leads += report.leads;
+      existing.appsBooked += report.appsBooked;
+    } else {
+      byMonth.set(key, { month: key, leads: report.leads, appsBooked: report.appsBooked });
+    }
+  }
+
+  return Array.from(byMonth.values());
+}
+
+export type TopHvacContractor = {
+  id: string;
+  name: string;
+  leads: number;
+  appsBooked: number;
+  bookingRate: number;
+};
+
+export async function getTopHvacContractorsAllTime(limit = 20): Promise<TopHvacContractor[]> {
+  const accounts = await prisma.company.findMany({
+    where: { stage: "RELATIONSHIP_MANAGEMENT" },
+    select: {
+      id: true,
+      name: true,
+      industry: true,
+      leadReports: { select: { leads: true, appsBooked: true, industry: true } },
+    },
+  });
+
+  const contractors: TopHvacContractor[] = [];
+  for (const account of accounts) {
+    if (account.leadReports.length === 0) continue;
+    const industry = account.industry ?? account.leadReports[account.leadReports.length - 1]?.industry ?? "";
+    if (!/hvac/i.test(industry)) continue;
+
+    const leads = account.leadReports.reduce((sum, r) => sum + r.leads, 0);
+    const appsBooked = account.leadReports.reduce((sum, r) => sum + r.appsBooked, 0);
+    if (leads === 0) continue;
+
+    contractors.push({ id: account.id, name: account.name, leads, appsBooked, bookingRate: appsBooked / leads });
+  }
+
+  contractors.sort((a, b) => b.leads - a.leads);
+  return contractors.slice(0, limit);
+}
+
 export type GoneQuietAccount = {
   id: string;
   name: string;

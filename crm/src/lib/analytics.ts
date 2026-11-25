@@ -1,10 +1,9 @@
-import { startOfWeek, subWeeks, startOfMonth, startOfYear, subMonths, differenceInCalendarMonths, format } from "date-fns";
+import { startOfWeek, subWeeks, subMonths, format } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { STAGE_LABELS, STAGE_ORDER } from "@/lib/stages";
 import { DealStage } from "@/generated/prisma/enums";
 
 const WEEKS_OF_HISTORY = 12;
-const MONTHS_OF_REVENUE_HISTORY = 6;
 const TOP_ACCOUNTS_LIMIT = 20;
 
 // Consecutive stage pairs that make up the pipeline:
@@ -26,15 +25,6 @@ function weekBuckets(): { key: string; label: string }[] {
   for (let i = WEEKS_OF_HISTORY - 1; i >= 0; i--) {
     const weekStart = startOfWeek(subWeeks(new Date(), i), { weekStartsOn: 1 });
     buckets.push({ key: format(weekStart, "yyyy-MM-dd"), label: format(weekStart, "MMM d") });
-  }
-  return buckets;
-}
-
-function monthBuckets(): { key: string; label: string }[] {
-  const buckets: { key: string; label: string }[] = [];
-  for (let i = MONTHS_OF_REVENUE_HISTORY - 1; i >= 0; i--) {
-    const monthStart = subMonths(startOfMonth(new Date()), i);
-    buckets.push({ key: format(monthStart, "yyyy-MM"), label: format(monthStart, "MMM yyyy") });
   }
   return buckets;
 }
@@ -63,7 +53,7 @@ export async function getAnalytics() {
       select: { companyId: true, fromStage: true, toStage: true, changedAt: true },
     }),
     prisma.revenueEntry.findMany({
-      include: { company: { select: { name: true } } },
+      select: { companyId: true, amount: true, receivedAt: true },
       orderBy: { receivedAt: "desc" },
     }),
   ]);
@@ -198,74 +188,14 @@ export async function getAnalytics() {
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count);
 
-  // --- Revenue: actual (logged) revenue vs. a data-driven projection —
-  // the average monthly value across ALL contractors with logged revenue,
-  // computed from this calendar year's complete months (excluding the
-  // still-in-progress current month) — instead of the old manual
-  // jobs/mo × price/HL input. ------------------------------------------------
-  const revenueMonthBuckets = monthBuckets();
-  const revenueMonthIndex = new Map(revenueMonthBuckets.map((b, i) => [b.key, i]));
-  const actualByMonth = revenueMonthBuckets.map((b) => ({ month: b.label, amount: 0 }));
-  const thisMonthKey = format(startOfMonth(new Date()), "yyyy-MM");
-  let actualAllTime = 0;
-  let actualThisMonth = 0;
-  const thisMonthByCompany = new Map<string, number>();
-  for (const entry of revenueEntries) {
-    actualAllTime += entry.amount;
-    const key = format(startOfMonth(entry.receivedAt), "yyyy-MM");
-    const idx = revenueMonthIndex.get(key);
-    if (idx !== undefined) actualByMonth[idx].amount += entry.amount;
-    if (key === thisMonthKey) {
-      actualThisMonth += entry.amount;
-      thisMonthByCompany.set(entry.companyId, (thisMonthByCompany.get(entry.companyId) ?? 0) + entry.amount);
-    }
-  }
-
   // Trailing-12-months actual revenue per company — the basis for the Top
-  // Accounts ranking (unaffected by the Projected Revenue change below).
+  // Accounts ranking.
   const oneYearAgo = subMonths(new Date(), 12);
   const revenueByCompanyTTM = new Map<string, number>();
   for (const entry of revenueEntries) {
     if (entry.receivedAt < oneYearAgo) continue;
     revenueByCompanyTTM.set(entry.companyId, (revenueByCompanyTTM.get(entry.companyId) ?? 0) + entry.amount);
   }
-
-  // Projected Revenue: total logged revenue across every contractor so far
-  // this calendar year, excluding the current (incomplete) month, divided
-  // by how many complete months that covers.
-  const yearStart = startOfYear(new Date());
-  const currentMonthStart = startOfMonth(new Date());
-  const monthsElapsedThisYear = differenceInCalendarMonths(currentMonthStart, yearStart);
-  let ytdRevenueExcludingCurrentMonth = 0;
-  for (const entry of revenueEntries) {
-    if (entry.receivedAt >= yearStart && entry.receivedAt < currentMonthStart) {
-      ytdRevenueExcludingCurrentMonth += entry.amount;
-    }
-  }
-  const projectedMonthly = monthsElapsedThisYear > 0 ? ytdRevenueExcludingCurrentMonth / monthsElapsedThisYear : 0;
-
-  const thisMonthByAccount = wonDeals
-    .map((d) => ({ name: d.name, amount: thisMonthByCompany.get(d.id) ?? 0 }))
-    .filter((a) => a.amount > 0)
-    .sort((a, b) => b.amount - a.amount);
-
-  const revenue = {
-    projectedMonthly,
-    actualAllTime,
-    actualThisMonth,
-    actualByMonth,
-    thisMonthByAccount,
-    // Analytics only ever shows the last 20 — the full ledger lives on
-    // its own page (/revenue), queried separately there.
-    entries: revenueEntries.slice(0, 20).map((e) => ({
-      id: e.id,
-      companyId: e.companyId,
-      companyName: e.company.name,
-      amount: e.amount,
-      receivedAt: e.receivedAt,
-      note: e.note,
-    })),
-  };
 
   // --- Health: relationship-health tier breakdown across won accounts -------
   const healthCounts: Record<"HEALTHY" | "AT_RISK" | "CRITICAL", number> = {
@@ -310,7 +240,6 @@ export async function getAnalytics() {
     totalCycleTime,
     dealsBySource,
     dealsOverTime: dealsByWeek,
-    revenue,
     health,
     topAccounts,
   };
