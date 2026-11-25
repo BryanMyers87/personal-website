@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone, Search, UploadCloud } from "lucide-react";
+import { Mail, Phone, PhoneIncoming, Search, UploadCloud } from "lucide-react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { clsx } from "clsx";
 import { prisma } from "@/lib/prisma";
@@ -97,9 +97,14 @@ export default async function AccountManagementPage({
         title="Account Management"
         description="Won accounts and the relationships you're maintaining with them. Amber rows have a completed Relationship Management checklist, red rows have an expired contract."
         action={
-          <ButtonLink href="/leads/upload">
-            <UploadCloud size={16} /> Upload Weekly Leads
-          </ButtonLink>
+          <div className="flex gap-2">
+            <ButtonLink href="/journal/import-communications" variant="secondary">
+              <PhoneIncoming size={16} /> Import Calls & Texts
+            </ButtonLink>
+            <ButtonLink href="/leads/upload">
+              <UploadCloud size={16} /> Upload Weekly Leads
+            </ButtonLink>
+          </div>
         }
       />
 

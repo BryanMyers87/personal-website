@@ -390,3 +390,27 @@ model CompanyAlias {
 
   @@index([companyId])
 }
+
+enum CommunicationKind {
+  CALL
+  TEXT
+}
+
+// Tracks every call/text record ever seen from an SMS Backup & Restore
+// export, keyed by a deterministic hash of its own fields — since each
+// export always contains the full phone history, this is what makes
+// re-uploading the same (growing) export safe: already-seen records are
+// never reprocessed or double-logged. Only records matched to a company
+// also get a linked JournalEntry; unmatched ones are recorded here purely
+// so they're not re-checked on the next upload.
+model CommunicationLogEntry {
+  id             String            @id @default(cuid())
+  externalId     String            @unique
+  kind           CommunicationKind
+  companyId      String?
+  journalEntryId String?
+  occurredAt     DateTime
+  createdAt      DateTime          @default(now())
+
+  @@index([companyId])
+}
