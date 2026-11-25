@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
-import { LayoutDashboard, Sparkles } from "lucide-react";
+import { LayoutDashboard, LogOut, Sparkles } from "lucide-react";
 import { NAV_ITEMS } from "@/lib/nav";
+import { logout } from "@/actions/auth";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -48,6 +49,15 @@ export default function Sidebar() {
           <LayoutDashboard size={14} />
           Built for Inflate AI
         </p>
+        <form action={logout} className="mt-3">
+          <button
+            type="submit"
+            className="flex items-center gap-2 text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+          >
+            <LogOut size={14} />
+            Log out
+          </button>
+        </form>
       </div>
     </aside>
   );
